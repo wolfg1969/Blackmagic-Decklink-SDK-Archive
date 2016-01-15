@@ -3,18 +3,18 @@
 /* this ALWAYS GENERATED file contains the definitions for the interfaces */
 
 
- /* File created by MIDL compiler version 7.00.0500 */
-/* at Tue Jan 22 13:17:22 2013
+ /* File created by MIDL compiler version 8.00.0603 */
+/* at Tue Nov 24 09:20:56 2015
  */
-/* Compiler settings for .\GMFBridge.idl:
-    Oicf, W1, Zp8, env=Win32 (32b run)
+/* Compiler settings for GMFBridge.idl:
+    Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 8.00.0603 
     protocol : dce , ms_ext, c_ext, robust
     error checks: allocation ref bounds_check enum stub_data 
     VC __declspec() decoration level: 
          __declspec(uuid()), __declspec(selectany), __declspec(novtable)
          DECLSPEC_UUID(), MIDL_INTERFACE()
 */
-//@@MIDL_FILE_HEADING(  )
+/* @@MIDL_FILE_HEADING(  ) */
 
 #pragma warning( disable: 4049 )  /* more than 64k source lines */
 
@@ -48,18 +48,21 @@
 #ifndef __IGMFBridgeController_FWD_DEFINED__
 #define __IGMFBridgeController_FWD_DEFINED__
 typedef interface IGMFBridgeController IGMFBridgeController;
+
 #endif 	/* __IGMFBridgeController_FWD_DEFINED__ */
 
 
 #ifndef __IGMFBridgeController2_FWD_DEFINED__
 #define __IGMFBridgeController2_FWD_DEFINED__
 typedef interface IGMFBridgeController2 IGMFBridgeController2;
+
 #endif 	/* __IGMFBridgeController2_FWD_DEFINED__ */
 
 
 #ifndef ___IGMFBridgeEvents_FWD_DEFINED__
 #define ___IGMFBridgeEvents_FWD_DEFINED__
 typedef interface _IGMFBridgeEvents _IGMFBridgeEvents;
+
 #endif 	/* ___IGMFBridgeEvents_FWD_DEFINED__ */
 
 
@@ -89,9 +92,10 @@ extern "C"{
 
 typedef /* [public][public] */ 
 enum __MIDL___MIDL_itf_GMFBridge_0000_0000_0001
-    {	eUncompressed	= 0,
-	eMuxInputs	= ( eUncompressed + 1 ) ,
-	eAny	= ( eMuxInputs + 1 ) 
+    {
+        eUncompressed	= 0,
+        eMuxInputs	= ( eUncompressed + 1 ) ,
+        eAny	= ( eMuxInputs + 1 ) 
     } 	eFormatType;
 
 
@@ -159,6 +163,7 @@ EXTERN_C const IID IID_IGMFBridgeController;
         
     };
     
+    
 #else 	/* C style interface */
 
     typedef struct IGMFBridgeControllerVtbl
@@ -168,8 +173,8 @@ EXTERN_C const IID IID_IGMFBridgeController;
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             IGMFBridgeController * This,
             /* [in] */ REFIID riid,
-            /* [iid_is][out] */ 
-            __RPC__deref_out  void **ppvObject);
+            /* [annotation][iid_is][out] */ 
+            _COM_Outptr_  void **ppvObject);
         
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             IGMFBridgeController * This);
@@ -197,14 +202,22 @@ EXTERN_C const IID IID_IGMFBridgeController;
         
         /* [local] */ HRESULT ( STDMETHODCALLTYPE *Invoke )( 
             IGMFBridgeController * This,
-            /* [in] */ DISPID dispIdMember,
-            /* [in] */ REFIID riid,
-            /* [in] */ LCID lcid,
-            /* [in] */ WORD wFlags,
-            /* [out][in] */ DISPPARAMS *pDispParams,
-            /* [out] */ VARIANT *pVarResult,
-            /* [out] */ EXCEPINFO *pExcepInfo,
-            /* [out] */ UINT *puArgErr);
+            /* [annotation][in] */ 
+            _In_  DISPID dispIdMember,
+            /* [annotation][in] */ 
+            _In_  REFIID riid,
+            /* [annotation][in] */ 
+            _In_  LCID lcid,
+            /* [annotation][in] */ 
+            _In_  WORD wFlags,
+            /* [annotation][out][in] */ 
+            _In_  DISPPARAMS *pDispParams,
+            /* [annotation][out] */ 
+            _Out_opt_  VARIANT *pVarResult,
+            /* [annotation][out] */ 
+            _Out_opt_  EXCEPINFO *pExcepInfo,
+            /* [annotation][out] */ 
+            _Out_opt_  UINT *puArgErr);
         
         /* [helpstring][id] */ HRESULT ( STDMETHODCALLTYPE *AddStream )( 
             IGMFBridgeController * This,
@@ -362,6 +375,7 @@ EXTERN_C const IID IID_IGMFBridgeController2;
         
     };
     
+    
 #else 	/* C style interface */
 
     typedef struct IGMFBridgeController2Vtbl
@@ -371,8 +385,8 @@ EXTERN_C const IID IID_IGMFBridgeController2;
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             IGMFBridgeController2 * This,
             /* [in] */ REFIID riid,
-            /* [iid_is][out] */ 
-            __RPC__deref_out  void **ppvObject);
+            /* [annotation][iid_is][out] */ 
+            _COM_Outptr_  void **ppvObject);
         
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             IGMFBridgeController2 * This);
@@ -400,14 +414,22 @@ EXTERN_C const IID IID_IGMFBridgeController2;
         
         /* [local] */ HRESULT ( STDMETHODCALLTYPE *Invoke )( 
             IGMFBridgeController2 * This,
-            /* [in] */ DISPID dispIdMember,
-            /* [in] */ REFIID riid,
-            /* [in] */ LCID lcid,
-            /* [in] */ WORD wFlags,
-            /* [out][in] */ DISPPARAMS *pDispParams,
-            /* [out] */ VARIANT *pVarResult,
-            /* [out] */ EXCEPINFO *pExcepInfo,
-            /* [out] */ UINT *puArgErr);
+            /* [annotation][in] */ 
+            _In_  DISPID dispIdMember,
+            /* [annotation][in] */ 
+            _In_  REFIID riid,
+            /* [annotation][in] */ 
+            _In_  LCID lcid,
+            /* [annotation][in] */ 
+            _In_  WORD wFlags,
+            /* [annotation][out][in] */ 
+            _In_  DISPPARAMS *pDispParams,
+            /* [annotation][out] */ 
+            _Out_opt_  VARIANT *pVarResult,
+            /* [annotation][out] */ 
+            _Out_opt_  EXCEPINFO *pExcepInfo,
+            /* [annotation][out] */ 
+            _Out_opt_  UINT *puArgErr);
         
         /* [helpstring][id] */ HRESULT ( STDMETHODCALLTYPE *AddStream )( 
             IGMFBridgeController2 * This,
@@ -588,8 +610,8 @@ EXTERN_C const IID DIID__IGMFBridgeEvents;
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             _IGMFBridgeEvents * This,
             /* [in] */ REFIID riid,
-            /* [iid_is][out] */ 
-            __RPC__deref_out  void **ppvObject);
+            /* [annotation][iid_is][out] */ 
+            _COM_Outptr_  void **ppvObject);
         
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             _IGMFBridgeEvents * This);
@@ -617,14 +639,22 @@ EXTERN_C const IID DIID__IGMFBridgeEvents;
         
         /* [local] */ HRESULT ( STDMETHODCALLTYPE *Invoke )( 
             _IGMFBridgeEvents * This,
-            /* [in] */ DISPID dispIdMember,
-            /* [in] */ REFIID riid,
-            /* [in] */ LCID lcid,
-            /* [in] */ WORD wFlags,
-            /* [out][in] */ DISPPARAMS *pDispParams,
-            /* [out] */ VARIANT *pVarResult,
-            /* [out] */ EXCEPINFO *pExcepInfo,
-            /* [out] */ UINT *puArgErr);
+            /* [annotation][in] */ 
+            _In_  DISPID dispIdMember,
+            /* [annotation][in] */ 
+            _In_  REFIID riid,
+            /* [annotation][in] */ 
+            _In_  LCID lcid,
+            /* [annotation][in] */ 
+            _In_  WORD wFlags,
+            /* [annotation][out][in] */ 
+            _In_  DISPPARAMS *pDispParams,
+            /* [annotation][out] */ 
+            _Out_opt_  VARIANT *pVarResult,
+            /* [annotation][out] */ 
+            _Out_opt_  EXCEPINFO *pExcepInfo,
+            /* [annotation][out] */ 
+            _Out_opt_  UINT *puArgErr);
         
         END_INTERFACE
     } _IGMFBridgeEventsVtbl;

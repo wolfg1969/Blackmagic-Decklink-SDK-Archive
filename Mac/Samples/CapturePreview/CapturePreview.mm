@@ -57,37 +57,108 @@ using namespace std;
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
-	NSMutableArray*		deviceNames;
-	int					deviceIndex;	
+	//
+	// Setup UI
 	
 	// Empty popup menus
 	[deviceListPopup removeAllItems];
 	[modeListPopup removeAllItems];
-
+	[ancillaryDataTable reloadData];
 	
-	// Create and initialise DeckLink controller
-	deckLinkController = new DeckLinkController(self);
-	if (deckLinkController->init(previewView) == false)
+	// Disable the interface
+	[startStopButton setEnabled:NO];
+	[self enableInterface:NO];
+	
+	//
+	// Create and initialise DeckLink device discovery and preview objects
+	screenPreviewCallback = CreateCocoaScreenPreview(previewView);
+	deckLinkDiscovery = new DeckLinkDeviceDiscovery(self);
+	if ((screenPreviewCallback != NULL) && (deckLinkDiscovery != NULL))
 	{
-		// Disable the interface
-		[startStopButton setEnabled:NO];
-		[self enableInterface:NO];
+		deckLinkDiscovery->Enable();
+	}
+	else
+	{
+		[self showErrorMessage:@"This application requires the Desktop Video drivers installed." title:@"Please install the Blackmagic Desktop Video drivers to use the features of this application."];
+    }
+}
+
+- (void)addDevice:(IDeckLink*)deckLink
+{
+	// Create new DeckLinkDevice object to wrap around new IDeckLink instance
+	DeckLinkDevice* device = new DeckLinkDevice(self, deckLink);
+	
+	// Initialise new DeckLinkDevice object
+	if (! device->init())
+	{
+		[self showErrorMessage:@"Error initialising the new device" title:@"This application is unable to initialise the new device"];
+		device->Release();
 		return;
 	}
+
+	[[deviceListPopup menu] addItemWithTitle:(NSString*)device->getDeviceName() action:nil keyEquivalent:@""];
+	[[deviceListPopup lastItem] setTag:(NSInteger)device];
 	
-	// Populate DeckLink device menu
-	deviceNames = deckLinkController->getDeviceNameList();
-	for (deviceIndex = 0; deviceIndex < [deviceNames count]; deviceIndex++)
+	if ([deviceListPopup numberOfItems] == 1)
 	{
-		// Add this DeckLink device to the device list
-		[deviceListPopup addItemWithTitle:[deviceNames objectAtIndex:deviceIndex]];
+		// We have added our first item, enable the interface
+		[deviceListPopup selectItemAtIndex:0];
+		[self newDeviceSelected:nil];
+		
+		[startStopButton setEnabled:YES];
+		[self enableInterface:YES];
 	}
 	
-	// Refresh the UI for the selected device
-	[deviceListPopup selectItemAtIndex:0];
-	[self newDeviceSelected:nil];
+}
+
+- (void)removeDevice:(IDeckLink*)deckLink
+{
+	DeckLinkDevice* deviceToRemove = NULL;
+	DeckLinkDevice* removalCandidate = NULL;
+	NSInteger index = 0;
 	
-	[ancillaryDataTable reloadData];
+	// Find the DeckLinkDevice that wraps the IDeckLink being removed
+	for (NSMenuItem* item in [deviceListPopup itemArray])
+	{
+		removalCandidate = (DeckLinkDevice*)[item tag];
+
+		if (removalCandidate->deckLink == deckLink)
+		{
+			deviceToRemove = removalCandidate;
+			break;
+		}
+		++index;
+	}
+	
+	if (deviceToRemove == NULL)
+		return;
+	
+	// If capture is ongoing, stop it
+	if (deviceToRemove->isCapturing())
+		deviceToRemove->stopCapture();
+	
+	[deviceListPopup removeItemAtIndex:index];
+	
+	[startStopButton setTitle:@"Start Capture"];
+	
+	if ([deviceListPopup numberOfItems] == 0)
+	{
+		// We have removed the last item, disable the interface
+		[startStopButton setEnabled:NO];
+		[self enableInterface:NO];
+		selectedDevice = NULL;
+	}
+	else if (selectedDevice == deviceToRemove)
+	{
+		// Select the first device in the list and enable the interface
+		[deviceListPopup selectItemAtIndex:0];
+		[self newDeviceSelected:nil];
+		
+		[startStopButton setEnabled:YES];
+	}
+	
+	// Release DeckLinkDevice instance
+	deviceToRemove->Release();
 }
 
 
@@ -101,24 +172,23 @@ using namespace std;
 {
 	NSMutableArray*		modeNames;
 	int					modeIndex = 0;
-	
+   
 	// Clear the menu
 	[modeListPopup removeAllItems];
 	
 	// Get the mode names
-	modeNames = deckLinkController->getDisplayModeNames();
+	modeNames = selectedDevice->getDisplayModeNames();
 	
 	// Add them to the menu
 	while (modeIndex < [modeNames count])
-		[modeListPopup addItemWithTitle:[modeNames objectAtIndex:modeIndex++]];	
+		[modeListPopup addItemWithTitle:[modeNames objectAtIndex:modeIndex++]];
 }
 
 
 - (IBAction)newDeviceSelected:(id)sender
 {
-	// Generate the mode list for this device
-	if (! deckLinkController->selectDevice([deviceListPopup indexOfSelectedItem]))
-		return;
+	// Get the DeckLinkDevice object for the selected menu item.
+	selectedDevice = (DeckLinkDevice*)[[deviceListPopup selectedItem] tag];
 	
 	// Update the video mode popup menu
 	[self refreshVideoModeList];
@@ -130,7 +200,10 @@ using namespace std;
 
 - (IBAction)toggleStart:(id)sender
 {
-	if (deckLinkController->isCapturing())
+	if (selectedDevice == NULL)
+		return;
+	
+	if (selectedDevice->isCapturing())
 		[self stopCapture];
 	else
 		[self startCapture];
@@ -139,7 +212,7 @@ using namespace std;
 
 - (void)startCapture
 {
-	if (deckLinkController->startCapture([modeListPopup indexOfSelectedItem]))
+	if (selectedDevice && selectedDevice->startCapture([modeListPopup indexOfSelectedItem], screenPreviewCallback))
 	{
 		// Update UI
 		[startStopButton setTitle:@"Stop"];
@@ -150,13 +223,14 @@ using namespace std;
 
 - (void)stopCapture
 {
-	deckLinkController->stopCapture();
+	if (selectedDevice)
+		selectedDevice->stopCapture();
 	
 	// Update UI
-	[startStopButton setTitle:@"Start"];
+	[startStopButton setTitle:@"Start Capture"];
 	[self enableInterface:YES];
 	[noValidSource setHidden:YES];
-
+	
 }
 
 
@@ -164,10 +238,11 @@ using namespace std;
 {
 	[deviceListPopup setEnabled:enabled];
 	[modeListPopup setEnabled:enabled];
+	[noValidSource setHidden:YES];
 	
 	if (enabled == TRUE)
 	{
-		if (deckLinkController->isFormatDetectionEnabled())
+		if (selectedDevice && selectedDevice->deviceSupportsFormatDetection())
 		{
 			[applyDetectedVideoMode setEnabled:TRUE];
 			[applyDetectedVideoMode setState:NSOnState];
@@ -178,7 +253,7 @@ using namespace std;
 			[applyDetectedVideoMode setState:NSOffState];
 		}
 	}
-	else 
+	else
 		[applyDetectedVideoMode setEnabled:FALSE];
 }
 
@@ -190,11 +265,11 @@ using namespace std;
 
 
 - (void)updateInputSourceState:(BOOL)state
-{	
+{
 	// Check if the state has changed
 	if ([noValidSource isHidden] != state)
 	{
-		[noValidSource setHidden:state];		
+		[noValidSource setHidden:state];
 	}
 }
 
@@ -204,7 +279,7 @@ using namespace std;
 	[modeListPopup selectItemAtIndex:newVideoModeIndex];
 }
 
-- (void)updateAncillaryData:(AncillaryDataStruct*) latestAncillaryDataValues
+- (void)setAncillaryData:(AncillaryDataStruct*) latestAncillaryDataValues
 {
 	// VITC
 	[ancillaryDataValues replaceObjectAtIndex:0 withObject:latestAncillaryDataValues->vitcF1Timecode];
@@ -219,7 +294,10 @@ using namespace std;
 	[ancillaryDataValues replaceObjectAtIndex:7 withObject:latestAncillaryDataValues->rp188ltcUserBits];
 	[ancillaryDataValues replaceObjectAtIndex:8 withObject:latestAncillaryDataValues->rp188vitc2Timecode];
 	[ancillaryDataValues replaceObjectAtIndex:9 withObject:latestAncillaryDataValues->rp188vitc2UserBits];
-	
+}
+
+- (void)reloadAncillaryTable;
+{
 	[ancillaryDataTable reloadData];
 }
 
@@ -251,17 +329,38 @@ using namespace std;
 	return [ancillaryDataValues count];
 }
 
-- (void)dealloc
+- (void)applicationWillTerminate:(NSNotification *)notification
 {
 	// Stop the capture
 	[self stopCapture];
+
+	// Disable DeckLink device discovery
+    deckLinkDiscovery->Disable();
+
+	// Release all DeckLinkDevice instances
+	while([deviceListPopup numberOfItems] > 0)
+	{
+		DeckLinkDevice* device = (DeckLinkDevice*)[[deviceListPopup itemAtIndex:0] tag];
+		device->Release();
+		[deviceListPopup removeItemAtIndex:0];
+	}
 	
-	// Release member variables
-	delete deckLinkController;	
+	// Release DeckLink discovery & screen preview instances
+    if (deckLinkDiscovery != NULL)
+    {
+        deckLinkDiscovery->Release();
+        deckLinkDiscovery = NULL;
+    }
+    
+    if (screenPreviewCallback)
+    {
+        screenPreviewCallback->Release();
+        screenPreviewCallback = NULL;
+    }
+
+	
 	[ancillaryDataValues release];
 	[ancillaryDataTypes release];
-	
-	[super dealloc];
 }
 
 @end

@@ -45,11 +45,11 @@ class Timecode
 {
 public:
 		Timecode(int f) 
-			: fps(f),hours_(0),minutes_(0),seconds_(0),frames_(0)
+			: fps(f),frames_(0),seconds_(0),minutes_(0),hours_(0)
 			{ return; }
 		void update() 
 		{ 
-			if (frames_ >= fps - 1)
+			if (frames_ >= (unsigned)fps - 1)
 			{
 				frames_ = 0;
 				seconds_++;
@@ -157,7 +157,7 @@ public:
 						PlaybackDelegate (SignalGenerator* owner, IDeckLinkOutput* deckLinkOutput);
 	
 	// IUnknown needs only a dummy implementation
-	virtual HRESULT		QueryInterface (REFIID iid, LPVOID *ppv)	{return E_NOINTERFACE;}
+	virtual HRESULT		QueryInterface (REFIID, LPVOID *)	{return E_NOINTERFACE;}
 	virtual ULONG		AddRef ()									{return 1;}
 	virtual ULONG		Release ()									{return 1;}
 	

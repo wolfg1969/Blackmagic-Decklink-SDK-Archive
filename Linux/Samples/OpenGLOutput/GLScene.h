@@ -33,6 +33,7 @@
 #define __GLScene_h__
 
 #include <QtOpenGL>
+#include <GL/glu.h>
 #include <qmutex.h>
 
 class GLScene

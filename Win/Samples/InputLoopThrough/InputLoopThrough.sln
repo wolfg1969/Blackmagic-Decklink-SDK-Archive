@@ -1,6 +1,9 @@
-Microsoft Visual Studio Solution File, Format Version 10.00
-# Visual Studio 2008
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "InputLoopThrough", "InputLoopThrough.vcproj", "{CB76EF94-F219-4463-8D8E-683A00AB597F}"
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.21005.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "InputLoopThrough", "InputLoopThrough.vcxproj", "{CB76EF94-F219-4463-8D8E-683A00AB597F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

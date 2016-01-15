@@ -45,13 +45,13 @@
 
     HRESULT EnableVideoInput([in] BMDDisplayMode displayMode, [in] BMDPixelFormat pixelFormat, [in] BMDVideoInputFlags flags);
     HRESULT DisableVideoInput(void);
-    HRESULT GetAvailableVideoFrameCount([out] unsigned long *availableFrameCount);
+    HRESULT GetAvailableVideoFrameCount([out] unsigned int *availableFrameCount);
 
     /* Audio Input */
 
-    HRESULT EnableAudioInput([in] BMDAudioSampleRate sampleRate, [in] BMDAudioSampleType sampleType, [in] unsigned long channelCount);
+    HRESULT EnableAudioInput([in] BMDAudioSampleRate sampleRate, [in] BMDAudioSampleType sampleType, [in] unsigned int channelCount);
     HRESULT DisableAudioInput(void);
-    HRESULT GetAvailableAudioSampleFrameCount([out] unsigned long *availableSampleFrameCount);
+    HRESULT GetAvailableAudioSampleFrameCount([out] unsigned int *availableSampleFrameCount);
 
     /* Input Control */
 

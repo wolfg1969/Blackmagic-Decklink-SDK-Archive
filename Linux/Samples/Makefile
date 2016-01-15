@@ -24,14 +24,20 @@
 #** DEALINGS IN THE SOFTWARE.
 #** -LICENSE-END-
 
-SUBDIRS=DeviceList TestPattern Capture SignalGenerator
+SUBDIRS=DeviceList TestPattern Capture LoopThroughWithOpenGLCompositing OpenGLOutput SignalGenerator
 
 all:
 	@for i in $(SUBDIRS); do \
 		echo "making $$i..."; \
-		(cd $$i; $(MAKE)); done
+		if [ -f "$$i/build.sh" ]; then \
+			(cd $$i; ./build.sh); \
+		else \
+			(cd $$i; $(MAKE)); \
+		fi; \
+	done
 
 clean:
 	@for i in $(SUBDIRS); do \
 		echo "cleaning $$i..."; \
-		(cd $$i; $(MAKE) clean); done
+		(cd $$i; $(MAKE) clean); \
+	done

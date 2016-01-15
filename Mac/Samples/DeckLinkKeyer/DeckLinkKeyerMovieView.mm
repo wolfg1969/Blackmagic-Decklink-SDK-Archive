@@ -30,11 +30,20 @@
 #import "DeckLinkKeyerMovieView.h"
 #import "DeckLinkKeyerController.h"
 
+// Functions missing from the 10.7+ SDKs
 #if !defined(__QUICKDRAWAPI__)
-	extern "C" void SetRect(Rect * r, short left, short top, short right, short bottom);
-	extern "C" void DisposeGWorld(GWorldPtr offscreenGWorld);
-	extern "C" GDHandle GetGWorldDevice(GWorldPtr offscreenGWorld);
-#endif
+extern "C" {
+	extern void SetRect(Rect * r,    short  left,    short  top,    short  right,    short  bottom)    __attribute__((weak_import));
+}
+#endif /* __QUICKDRAWAPI__ */
+
+#if !defined(__QDOFFSCREEN__)
+extern "C" {
+	extern QDErr NewGWorldFromPtr( GWorldPtr* offscreenGWorld, UInt32 PixelFormat,    const Rect *  boundsRect, CTabHandle cTable,/* can be NULL */ GDHandle aGDevice,/* can be NULL */ GWorldFlags flags, Ptr           newBuffer, SInt32 rowBytes) __attribute__((weak_import));
+	extern void DisposeGWorld(GWorldPtr offscreenGWorld) __attribute__((weak_import));
+	extern GDHandle GetGWorldDevice(GWorldPtr offscreenGWorld) __attribute__((weak_import));
+}
+#endif /* __QDOFFSCREEN__ */
 
 @implementation DeckLinkKeyerMovieView
 

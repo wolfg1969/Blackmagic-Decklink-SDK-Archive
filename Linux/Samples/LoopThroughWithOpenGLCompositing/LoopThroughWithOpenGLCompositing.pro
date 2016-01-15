@@ -3,6 +3,7 @@ LANGUAGE  	= C++
 CONFIG		+= qt opengl
 QT			+= opengl
 INCLUDEPATH =	../../include 
+LIBS		+= -lGLU -ldl
 
 HEADERS 	=	../../include/DeckLinkAPIDispatch.cpp \
 				LoopThroughWithOpenGLCompositing.h \

@@ -29,6 +29,7 @@
 
 #pragma once
 #include "DeckLinkAPI_h.h"
+#include "SignalGenerator3DVideoFrame.h"
 
 enum OutputSignal {
 	kOutputSignalPip		= 0,
@@ -59,6 +60,7 @@ protected:
 	CComboBox					m_audioChannelCombo;
 	CComboBox					m_audioSampleDepthCombo;
 	CComboBox					m_videoFormatCombo;
+	CComboBox					m_pixelFormatCombo;
 	
 	bool						m_running;
 	IDeckLink*					m_deckLink;
@@ -69,8 +71,8 @@ protected:
 	BMDTimeValue				m_frameDuration;
 	BMDTimeScale				m_frameTimescale;
 	unsigned long				m_framesPerSecond;
-	IDeckLinkMutableVideoFrame*	m_videoFrameBlack;
-	IDeckLinkMutableVideoFrame*	m_videoFrameBars;
+	SignalGenerator3DVideoFrame*	m_videoFrameBlack;
+	SignalGenerator3DVideoFrame*	m_videoFrameBars;
 	unsigned long				m_totalFramesScheduled;
 	
 	OutputSignal				m_outputSignal;
@@ -94,7 +96,10 @@ protected:
 	void			StopRunning ();
 	void			ScheduleNextFrame (bool prerolling);
 	void			WriteNextAudioSamples ();
-	
+
+private:
+	void			RefreshDisplayModeMenu(void);
+
 public:
 	afx_msg void OnBnClickedOk();
 	
@@ -108,9 +113,16 @@ public:
 	virtual HRESULT STDMETHODCALLTYPE	ScheduledPlaybackHasStopped (void);
 	
 	virtual HRESULT STDMETHODCALLTYPE	RenderAudioSamples (BOOL preroll);
+
+private:
+	SignalGenerator3DVideoFrame* CreateBlackFrame(void);
+	SignalGenerator3DVideoFrame* CreateBarsFrame(void);
+public:
+	afx_msg void OnCbnSelchangeComboSignal();
+	afx_msg void OnCbnSelchangeComboPixelFormat();
 };
 
 
 void	FillSine (void* audioBuffer, unsigned long samplesToWrite, unsigned long channels, unsigned long sampleDepth);
-void	FillColourBars (IDeckLinkVideoFrame* theFrame);
+void	FillColourBars (IDeckLinkVideoFrame* theFrame, bool reversed);
 void	FillBlack (IDeckLinkVideoFrame* theFrame);

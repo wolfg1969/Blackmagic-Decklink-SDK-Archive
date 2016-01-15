@@ -64,8 +64,6 @@ static void TransformImage_NV12(
 static const TCHAR CLASS_NAME[]  = _T("StreamingPreview Sample Window Class");
 static const TCHAR WINDOW_NAME[] = _T("StreamingPreview Sample");
 
-static PreviewWindow* gInstance = NULL;
-
 PreviewWindow::PreviewWindow(PreviewWindowClosedCb closedCb, void* ctx)
 {
 	m_hwnd = NULL;
@@ -83,25 +81,19 @@ PreviewWindow::~PreviewWindow()
 {
 	if (m_hwnd != NULL)
 		DestroyWindow(m_hwnd);
-
-	gInstance = NULL;
 }
 
 PreviewWindow* PreviewWindow::CreateInstance(PreviewWindowClosedCb closedCb, void* ctx)
 {
-	// Can only have one at a time!
-	if (gInstance != NULL)
-		return NULL;
+	PreviewWindow* instance = new PreviewWindow(closedCb, ctx);
 
-	gInstance = new PreviewWindow(closedCb, ctx);
-
-	if (! gInstance->DoCreateWindow())
+	if (! instance->DoCreateWindow())
 	{
-		delete gInstance;
-		gInstance = NULL;
+		delete instance;
+		instance = NULL;
 	}
 
-	return gInstance;
+	return instance;
 }
 
 // Called by the DecoderMF class when the media type
@@ -241,7 +233,7 @@ bool PreviewWindow::DrawFrame(IMFMediaBuffer* mediaBuffer)
 		}
 
 		if (m_newTextureInBuffer)
-			OutputDebugString(_T("WARNING: overwriten undisplayed texture\n"));
+			OutputDebugString(_T("WARNING: overwritten undisplayed texture\n"));
 		m_newTextureInBuffer = true;
 
 	ret = true;
@@ -275,7 +267,7 @@ bool PreviewWindow::DoCreateWindow()
         NULL,
 		NULL,
 		GetModuleHandle(NULL),
-		NULL);
+		this);
 
     if (! newHwnd)
 		return false;
@@ -394,6 +386,7 @@ LRESULT PreviewWindow::OnPaint(HWND hwnd, WPARAM wParam, LPARAM lParam)
 			goto bail;
 
 	m_device->Present(NULL, NULL, NULL, NULL);
+	m_newTextureInBuffer = false;
 
 bail:
 	LeaveCriticalSection(&m_criticalSection);
@@ -410,20 +403,36 @@ LRESULT PreviewWindow::OnSize(HWND hwnd, WPARAM wParam, LPARAM lParam)
 
 LRESULT PreviewWindow::PreviewWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	if (gInstance != NULL)
+	PreviewWindow* window = NULL;
+
+	// Store a pointer to the PreviewWindow object in the window class' user data
+	LONG_PTR userData = GetWindowLongPtr(hwnd, GWLP_USERDATA);
+	if (userData)
+	{
+		window = reinterpret_cast<PreviewWindow *>(userData);
+	}
+	else if (uMsg == WM_CREATE)
+	{
+		LPCREATESTRUCT createStruct = reinterpret_cast<LPCREATESTRUCT>(lParam);
+		void* lpCreateParam = createStruct->lpCreateParams;
+		window = reinterpret_cast<PreviewWindow *>(lpCreateParam);
+		SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(window));
+	}
+
+	if (window)
 	{
 		switch (uMsg)
 		{
 		case WM_CREATE:
-			return gInstance->OnCreate(hwnd, wParam, lParam);
+			return window->OnCreate(hwnd, wParam, lParam);
 		case WM_DESTROY:
-			return gInstance->OnDestroy(hwnd, wParam, lParam);
+			return window->OnDestroy(hwnd, wParam, lParam);
 		case WM_ERASEBKGND:
 			return 0;
 		case WM_PAINT:
-			return gInstance->OnPaint(hwnd, wParam, lParam);
+			return window->OnPaint(hwnd, wParam, lParam);
 		case WM_SIZE:
-			return gInstance->OnSize(hwnd, wParam, lParam);
+			return window->OnSize(hwnd, wParam, lParam);
 		}
 	}
 

@@ -129,7 +129,7 @@ public:
 	virtual ULONG STDMETHODCALLTYPE		Release(void);
 
 	// IDeckLinkMemoryAllocator methods
-	virtual HRESULT STDMETHODCALLTYPE	AllocateBuffer (unsigned long bufferSize, void* *allocatedBuffer);
+	virtual HRESULT STDMETHODCALLTYPE	AllocateBuffer (unsigned int bufferSize, void* *allocatedBuffer);
 	virtual HRESULT STDMETHODCALLTYPE	ReleaseBuffer (void* buffer);
 	virtual HRESULT STDMETHODCALLTYPE	Commit ();
 	virtual HRESULT STDMETHODCALLTYPE	Decommit ();

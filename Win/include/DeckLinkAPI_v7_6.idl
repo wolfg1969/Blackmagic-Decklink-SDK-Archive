@@ -129,26 +129,26 @@ interface IDeckLinkConfiguration_v7_6;
     HRESULT DisableVideoOutput(void);
 
     HRESULT SetVideoOutputFrameMemoryAllocator([in] IDeckLinkMemoryAllocator *theAllocator);
-    HRESULT CreateVideoFrame(long width, long height, long rowBytes, BMDPixelFormat pixelFormat, BMDFrameFlags flags, [out] IDeckLinkMutableVideoFrame_v7_6 **outFrame);
+    HRESULT CreateVideoFrame(int width, int height, int rowBytes, BMDPixelFormat pixelFormat, BMDFrameFlags flags, [out] IDeckLinkMutableVideoFrame_v7_6 **outFrame);
     HRESULT CreateAncillaryData(BMDPixelFormat pixelFormat, [out] IDeckLinkVideoFrameAncillary **outBuffer);
 
     HRESULT DisplayVideoFrameSync([in] IDeckLinkVideoFrame_v7_6 *theFrame);
     HRESULT ScheduleVideoFrame([in] IDeckLinkVideoFrame_v7_6 *theFrame, BMDTimeValue displayTime, BMDTimeValue displayDuration, BMDTimeScale timeScale);
     HRESULT SetScheduledFrameCompletionCallback([in] IDeckLinkVideoOutputCallback_v7_6 *theCallback);
-    HRESULT GetBufferedVideoFrameCount([out] unsigned long *bufferedFrameCount);
+    HRESULT GetBufferedVideoFrameCount([out] unsigned int *bufferedFrameCount);
 
     /* Audio Output */
 
-    HRESULT EnableAudioOutput(BMDAudioSampleRate sampleRate, BMDAudioSampleType sampleType, unsigned long channelCount, BMDAudioOutputStreamType streamType);
+    HRESULT EnableAudioOutput(BMDAudioSampleRate sampleRate, BMDAudioSampleType sampleType, unsigned int channelCount, BMDAudioOutputStreamType streamType);
     HRESULT DisableAudioOutput(void);
 
-    HRESULT WriteAudioSamplesSync([in] void *buffer, unsigned long sampleFrameCount, [out] unsigned long *sampleFramesWritten);
+    HRESULT WriteAudioSamplesSync([in] void *buffer, unsigned int sampleFrameCount, [out] unsigned int *sampleFramesWritten);
 
     HRESULT BeginAudioPreroll(void);
     HRESULT EndAudioPreroll(void);
-    HRESULT ScheduleAudioSamples([in] void *buffer, unsigned long sampleFrameCount, BMDTimeValue streamTime, BMDTimeScale timeScale, [out] unsigned long *sampleFramesWritten);
+    HRESULT ScheduleAudioSamples([in] void *buffer, unsigned int sampleFrameCount, BMDTimeValue streamTime, BMDTimeScale timeScale, [out] unsigned int *sampleFramesWritten);
 
-    HRESULT GetBufferedAudioSampleFrameCount([out] unsigned long *bufferedSampleFrameCount);
+    HRESULT GetBufferedAudioSampleFrameCount([out] unsigned int *bufferedSampleFrameCount);
     HRESULT FlushBufferedAudioSamples(void);
 
     HRESULT SetAudioCallback([in] IDeckLinkAudioOutputCallback *theCallback);
@@ -183,13 +183,13 @@ interface IDeckLinkConfiguration_v7_6;
 
     HRESULT EnableVideoInput(BMDDisplayMode displayMode, BMDPixelFormat pixelFormat, BMDVideoInputFlags flags);
     HRESULT DisableVideoInput(void);
-    HRESULT GetAvailableVideoFrameCount([out] unsigned long *availableFrameCount);
+    HRESULT GetAvailableVideoFrameCount([out] unsigned int *availableFrameCount);
 
     /* Audio Input */
 
-    HRESULT EnableAudioInput(BMDAudioSampleRate sampleRate, BMDAudioSampleType sampleType, unsigned long channelCount);
+    HRESULT EnableAudioInput(BMDAudioSampleRate sampleRate, BMDAudioSampleType sampleType, unsigned int channelCount);
     HRESULT DisableAudioInput(void);
-    HRESULT GetAvailableAudioSampleFrameCount([out] unsigned long *availableSampleFrameCount);
+    HRESULT GetAvailableAudioSampleFrameCount([out] unsigned int *availableSampleFrameCount);
 
     /* Input Control */
 
@@ -360,16 +360,16 @@ interface IDeckLinkConfiguration_v7_6;
     HRESULT SetBlackVideoOutputDuringCapture([in] BOOL blackOutInCapture);
     HRESULT GetBlackVideoOutputDuringCapture([out] BOOL *blackOutInCapture);
 
-    HRESULT Set32PulldownSequenceInitialTimecodeFrame([in] unsigned long aFrameTimecode);
-    HRESULT Get32PulldownSequenceInitialTimecodeFrame([out] unsigned long *aFrameTimecode);
+    HRESULT Set32PulldownSequenceInitialTimecodeFrame([in] unsigned int aFrameTimecode);
+    HRESULT Get32PulldownSequenceInitialTimecodeFrame([out] unsigned int *aFrameTimecode);
 
-    HRESULT SetVancSourceLineMapping([in] unsigned long activeLine1VANCsource, [in] unsigned long activeLine2VANCsource, [in] unsigned long activeLine3VANCsource);
-    HRESULT GetVancSourceLineMapping([out] unsigned long *activeLine1VANCsource, [out] unsigned long *activeLine2VANCsource, [out] unsigned long *activeLine3VANCsource);
+    HRESULT SetVancSourceLineMapping([in] unsigned int activeLine1VANCsource, [in] unsigned int activeLine2VANCsource, [in] unsigned int activeLine3VANCsource);
+    HRESULT GetVancSourceLineMapping([out] unsigned int *activeLine1VANCsource, [out] unsigned int *activeLine2VANCsource, [out] unsigned int *activeLine3VANCsource);
 
     /* Audio Input Configuration */
 
-    HRESULT SetAudioInputFormat([in] BMDAudioConnection audioInputFormat);
-    HRESULT GetAudioInputFormat([out] BMDAudioConnection *audioInputFormat);
+    HRESULT SetAudioInputFormat([in] BMDAudioConnection_v10_2 audioInputFormat);
+    HRESULT GetAudioInputFormat([out] BMDAudioConnection_v10_2 *audioInputFormat);
 };
 
 

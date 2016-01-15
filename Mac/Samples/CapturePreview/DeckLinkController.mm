@@ -29,182 +29,125 @@
 
 using namespace std;
 
-DeckLinkController::DeckLinkController(CapturePreviewAppDelegate* delegate)
-	: uiDelegate(delegate), selectedDevice(NULL), deckLinkInput(NULL), 
-	screenPreviewCallback(NULL), supportFormatDetection(false), currentlyCapturing(false)
-{}
 
-
-DeckLinkController::~DeckLinkController()
+DeckLinkDevice::DeckLinkDevice(CapturePreviewAppDelegate* ui, IDeckLink* device) : uiDelegate(ui), deckLink(device), deckLinkInput(NULL), supportFormatDetection(false), refCount(1), currentlyCapturing(false), deviceName(NULL)
 {
-	vector<IDeckLink*>::iterator it;
-	
-	// Release screen preview
-	if (screenPreviewCallback != NULL)
-	{
-		screenPreviewCallback->Release();
-		screenPreviewCallback = NULL;
-	}
-		
-	// Release the IDeckLink list
-	for(it = deviceList.begin(); it != deviceList.end(); it++)
-	{
-		(*it)->Release();
-	}
+	// DeckLinkDevice owns IDeckLink instance
+	// AddRef has already been called on this IDeckLink instance on our behalf in DeckLinkDeviceArrived to avoid a race
 }
 
-
-bool		DeckLinkController::init(NSView *previewView)
+DeckLinkDevice::~DeckLinkDevice()
 {
-	IDeckLinkIterator*	deckLinkIterator = NULL;
-	IDeckLink*			deckLink = NULL;
-	bool				result = false;
-	
-	// Create an iterator
-	deckLinkIterator = CreateDeckLinkIteratorInstance();
-	if (deckLinkIterator == NULL)
+	if (deckLinkInput)
 	{
-		[uiDelegate showErrorMessage:@"This application requires the Desktop Video drivers installed." title:@"Please install the Blackmagic Desktop Video drivers to use the features of this application."];
-		goto bail;
+		deckLinkInput->Release();
+		deckLinkInput = NULL;
 	}
 	
-	// List all DeckLink devices
-	while (deckLinkIterator->Next(&deckLink) == S_OK)
+	if (deckLink)
 	{
-		// Add device to the device list
-		deviceList.push_back(deckLink);
+		deckLink->Release();
+		deckLink = NULL;
 	}
 	
-	if (deviceList.size() == 0)
-	{
-		[uiDelegate showErrorMessage:@"You will not be able to use the features of this application until a Blackmagic device is installed." title:@"This application requires at least one Blackmagic device."];
-		goto bail;
-	}
-	
-	screenPreviewCallback = CreateCocoaScreenPreview(previewView);
+	if (deviceName)
+		CFRelease(deviceName);
+}
 
-	result = true;
+HRESULT         DeckLinkDevice::QueryInterface (REFIID iid, LPVOID *ppv)
+{
+	CFUUIDBytes		iunknown;
+	HRESULT			result = E_NOINTERFACE;
 	
-bail:
-	if (deckLinkIterator != NULL)
+	// Initialise the return result
+	*ppv = NULL;
+	
+	// Obtain the IUnknown interface and compare it the provided REFIID
+	iunknown = CFUUIDGetUUIDBytes(IUnknownUUID);
+	if (memcmp(&iid, &iunknown, sizeof(REFIID)) == 0)
 	{
-		deckLinkIterator->Release();
-		deckLinkIterator = NULL;
+		*ppv = this;
+		AddRef();
+		result = S_OK;
+	}
+	else if (memcmp(&iid, &IID_IDeckLinkNotificationCallback, sizeof(REFIID)) == 0)
+	{
+		*ppv = (IDeckLinkNotificationCallback*)this;
+		AddRef();
+		result = S_OK;
 	}
 	
 	return result;
 }
 
-
-int			DeckLinkController::getDeviceCount()
+ULONG       DeckLinkDevice::AddRef (void)
 {
-	return deviceList.size();
+	return OSAtomicIncrement32(&refCount);
 }
 
-
-NSMutableArray*		DeckLinkController::getDeviceNameList()
+ULONG       DeckLinkDevice::Release (void)
 {
-	NSMutableArray*		nameList = [NSMutableArray array];
-	int					deviceIndex = 0;
+	int32_t		newRefValue;
 	
-	while (deviceIndex < deviceList.size())
-	{		
-		CFStringRef	cfStrName;
-		
-		// Get the name of this device
-		if (deviceList[deviceIndex]->GetDisplayName(&cfStrName) == S_OK)
-		{		
-			[nameList addObject:(NSString *)cfStrName];
-			CFRelease(cfStrName);
-		}
-		else
-		{
-			[nameList addObject:@"DeckLink"];
-		}
-
-		deviceIndex++;
+	newRefValue = OSAtomicDecrement32(&refCount);
+	if (newRefValue == 0)
+	{
+		delete this;
+		return 0;
 	}
 	
-	return nameList;
+	return newRefValue;
 }
 
-
-bool		DeckLinkController::selectDevice(int index)
+bool        DeckLinkDevice::init()
 {
-	IDeckLinkAttributes*			deckLinkAttributes = NULL;
-	IDeckLinkDisplayModeIterator*	displayModeIterator = NULL;
-	IDeckLinkDisplayMode*			displayMode = NULL;
-	bool							result = false;
-
-	// Check index
-	if (index >= deviceList.size())
-	{
-		[uiDelegate showErrorMessage:@"This application was unable to select the device." title:@"Error getting selecting the DeckLink device."];
-		goto bail;
-	}
+	IDeckLinkAttributes*            deckLinkAttributes = NULL;
+	IDeckLinkDisplayModeIterator*   displayModeIterator = NULL;
+	IDeckLinkDisplayMode*           displayMode = NULL;
 	
-	// A new device has been selected.
-	// Release the previous selected device and mode list
-	if (deckLinkInput != NULL)
-		deckLinkInput->Release();
+	// Get input interface
+	if (deckLink->QueryInterface(IID_IDeckLinkInput, (void**) &deckLinkInput) != S_OK)
+		return false;
 	
-	while(modeList.size() > 0)
-	{
-		modeList.back()->Release();
-		modeList.pop_back();
-	}
-	
-	
-	// Get the IDeckLinkInput for the selected device
-	if ((deviceList[index]->QueryInterface(IID_IDeckLinkInput, (void**)&deckLinkInput) != S_OK))
-	{
-		[uiDelegate showErrorMessage:@"This application was unable to obtain IDeckLinkInput for the selected device." title:@"Error getting setting up capture."];
-		deckLinkInput = NULL;
-		goto bail;
-	}
-	
-	//
-	// Retrieve and cache mode list	
-	if (deckLinkInput->GetDisplayModeIterator(&displayModeIterator) == S_OK)
-	{
-		while (displayModeIterator->Next(&displayMode) == S_OK)
-			modeList.push_back(displayMode);
-
-		displayModeIterator->Release();
-	}
-	
-	//
 	// Check if input mode detection format is supported.
-	
-	supportFormatDetection = false;	// assume unsupported until told otherwise
-	if (deviceList[index]->QueryInterface(IID_IDeckLinkAttributes, (void**) &deckLinkAttributes) == S_OK)
-	{	
+	if (deckLink->QueryInterface(IID_IDeckLinkAttributes, (void**) &deckLinkAttributes) == S_OK)
+	{
 		if (deckLinkAttributes->GetFlag(BMDDeckLinkSupportsInputFormatDetection, &supportFormatDetection) != S_OK)
 			supportFormatDetection = false;
 		
 		deckLinkAttributes->Release();
 	}
 	
-	result = true;
+	// Retrieve and cache mode list
+	if (deckLinkInput->GetDisplayModeIterator(&displayModeIterator) == S_OK)
+	{
+		while (displayModeIterator->Next(&displayMode) == S_OK)
+			modeList.push_back(displayMode);
+		
+		displayModeIterator->Release();
+	}
 	
-bail:
-	return result;
+	// Get device name
+	if (deckLink->GetDisplayName(&deviceName) != S_OK)
+		deviceName = CFStringCreateCopy(NULL, CFSTR("DeckLink"));
+	
+	return true;
 }
 
-NSMutableArray*		DeckLinkController::getDisplayModeNames()
+NSMutableArray*		DeckLinkDevice::getDisplayModeNames()
 {
 	NSMutableArray*		modeNames = [NSMutableArray array];
 	int					modeIndex;
 	CFStringRef			modeName;
 	
 	for (modeIndex = 0; modeIndex < modeList.size(); modeIndex++)
-	{			
+	{
 		if (modeList[modeIndex]->GetName(&modeName) == S_OK)
 		{
 			[modeNames addObject:(NSString *)modeName];
 			CFRelease(modeName);
 		}
-		else 
+		else
 		{
 			[modeNames addObject:@"Unknown mode"];
 		}
@@ -213,17 +156,7 @@ NSMutableArray*		DeckLinkController::getDisplayModeNames()
 	return modeNames;
 }
 
-bool		DeckLinkController::isFormatDetectionEnabled()
-{
-	return supportFormatDetection;
-}
-
-bool		DeckLinkController::isCapturing()
-{
-	return currentlyCapturing;
-}
-
-bool		DeckLinkController::startCapture(int videoModeIndex)
+bool		DeckLinkDevice::startCapture(int videoModeIndex, IDeckLinkScreenPreviewCallback* screenPreviewCallback)
 {
 	BMDVideoInputFlags		videoInputFlags;
 	
@@ -244,7 +177,7 @@ bool		DeckLinkController::startCapture(int videoModeIndex)
 	deckLinkInput->SetCallback(this);
 	
 	// Set the video input mode
-	if (deckLinkInput->EnableVideoInput(modeList[videoModeIndex]->GetDisplayMode(), bmdFormat8BitYUV, videoInputFlags) != S_OK)
+	if (deckLinkInput->EnableVideoInput(modeList[videoModeIndex]->GetDisplayMode(), bmdFormat10BitYUV, videoInputFlags) != S_OK)
 	{
 		[uiDelegate showErrorMessage:@"This application was unable to select the chosen video mode. Perhaps, the selected device is currently in-use." title:@"Error starting the capture"];
 		return false;
@@ -262,24 +195,33 @@ bool		DeckLinkController::startCapture(int videoModeIndex)
 	return true;
 }
 
-void		DeckLinkController::stopCapture()
+void		DeckLinkDevice::stopCapture()
 {
 	// Stop the capture
 	deckLinkInput->StopStreams();
 	
 	// Delete capture callback
 	deckLinkInput->SetCallback(NULL);
+    deckLinkInput->DisableVideoInput();
 	
 	currentlyCapturing = false;
 }
 
 
-HRESULT		DeckLinkController::VideoInputFormatChanged (/* in */ BMDVideoInputFormatChangedEvents notificationEvents, /* in */ IDeckLinkDisplayMode *newMode, /* in */ BMDDetectedVideoInputFormatFlags detectedSignalFlags)
-{	
+HRESULT		DeckLinkDevice::VideoInputFormatChanged (/* in */ BMDVideoInputFormatChangedEvents notificationEvents, /* in */ IDeckLinkDisplayMode *newMode, /* in */ BMDDetectedVideoInputFormatFlags detectedSignalFlags)
+{
 	UInt32				modeIndex = 0;
+	UInt32				flags = bmdVideoInputEnableFormatDetection;
+	BMDPixelFormat		pixelFormat = bmdFormat10BitYUV;
 	
 	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-	
+
+	if (detectedSignalFlags & bmdDetectedVideoInputRGB444)
+		pixelFormat = bmdFormat10BitRGB;
+
+	if (detectedSignalFlags & bmdDetectedVideoInputDualStream3D)
+		flags |= bmdVideoInputDualStream3D;
+
 	// Restart capture with the new video mode if told to
 	if ([uiDelegate shouldRestartCaptureWithNewVideoMode] == YES)
 	{
@@ -287,7 +229,7 @@ HRESULT		DeckLinkController::VideoInputFormatChanged (/* in */ BMDVideoInputForm
 		deckLinkInput->StopStreams();
 		
 		// Set the video input mode
-		if (deckLinkInput->EnableVideoInput(newMode->GetDisplayMode(), bmdFormat8BitYUV, bmdVideoInputEnableFormatDetection) != S_OK)
+		if (deckLinkInput->EnableVideoInput(newMode->GetDisplayMode(), pixelFormat, flags) != S_OK)
 		{
 			[uiDelegate stopCapture];
 			[uiDelegate showErrorMessage:@"This application was unable to select the new video mode." title:@"Error restarting the capture."];
@@ -300,7 +242,7 @@ HRESULT		DeckLinkController::VideoInputFormatChanged (/* in */ BMDVideoInputForm
 			[uiDelegate stopCapture];
 			[uiDelegate showErrorMessage:@"This application was unable to start the capture on the selected device." title:@"Error restarting the capture."];
 			goto bail;
-		}		
+		}
 	}
 	
 	// Find the index of the new mode in the mode list so we can update the UI
@@ -313,13 +255,13 @@ HRESULT		DeckLinkController::VideoInputFormatChanged (/* in */ BMDVideoInputForm
 		modeIndex++;
 	}
 	
-
+	
 bail:
 	[pool release];
 	return S_OK;
 }
 
-HRESULT 	DeckLinkController::VideoInputFrameArrived (/* in */ IDeckLinkVideoInputFrame* videoFrame, /* in */ IDeckLinkAudioInputPacket* audioPacket)
+HRESULT 	DeckLinkDevice::VideoInputFrameArrived (/* in */ IDeckLinkVideoInputFrame* videoFrame, /* in */ IDeckLinkAudioInputPacket* audioPacket)
 {
 	BOOL					hasValidInputSource = (videoFrame->GetFlags() & bmdFrameHasNoInputSource) != 0 ? NO : YES;
 	AncillaryDataStruct		ancillaryData;
@@ -336,14 +278,19 @@ HRESULT 	DeckLinkController::VideoInputFrameArrived (/* in */ IDeckLinkVideoInpu
 	getAncillaryDataFromFrame(videoFrame, bmdTimecodeRP188LTC, &ancillaryData.rp188ltcTimecode, &ancillaryData.rp188ltcUserBits);
 	getAncillaryDataFromFrame(videoFrame, bmdTimecodeRP188VITC2, &ancillaryData.rp188vitc2Timecode, &ancillaryData.rp188vitc2UserBits);
 	
+	[uiDelegate setAncillaryData:&ancillaryData];
+	
 	// Update the UI
-	[uiDelegate updateAncillaryData:&ancillaryData];
+	dispatch_async(dispatch_get_main_queue(), ^{
+		[uiDelegate reloadAncillaryTable];
+	});
 	
 	[pool release];
 	return S_OK;
 }
 
-void	DeckLinkController::getAncillaryDataFromFrame(IDeckLinkVideoInputFrame* videoFrame, BMDTimecodeFormat timecodeFormat, NSString** timecodeString, NSString** userBitsString)
+
+void            DeckLinkDevice::getAncillaryDataFromFrame(IDeckLinkVideoInputFrame* videoFrame, BMDTimecodeFormat timecodeFormat, NSString** timecodeString, NSString** userBitsString)
 {
 	IDeckLinkTimecode*		timecode = NULL;
 	CFStringRef				timecodeCFString;
@@ -372,10 +319,105 @@ void	DeckLinkController::getAncillaryDataFromFrame(IDeckLinkVideoInputFrame* vid
 		*timecodeString = @"";
 		*userBitsString = @"";
 	}
-
-
 }
 
 
+DeckLinkDeviceDiscovery::DeckLinkDeviceDiscovery(CapturePreviewAppDelegate* delegate)
+: uiDelegate(delegate), deckLinkDiscovery(NULL), refCount(1)
+{
+	deckLinkDiscovery = CreateDeckLinkDiscoveryInstance();
+}
 
+
+DeckLinkDeviceDiscovery::~DeckLinkDeviceDiscovery()
+{
+	if (deckLinkDiscovery != NULL)
+	{
+		// Uninstall device arrival notifications and release discovery object
+		deckLinkDiscovery->UninstallDeviceNotifications();
+		deckLinkDiscovery->Release();
+		deckLinkDiscovery = NULL;
+	}
+}
+
+bool        DeckLinkDeviceDiscovery::Enable()
+{
+	HRESULT     result = E_FAIL;
+	
+	// Install device arrival notifications
+	if (deckLinkDiscovery != NULL)
+		result = deckLinkDiscovery->InstallDeviceNotifications(this);
+	
+	return result == S_OK;
+}
+
+void        DeckLinkDeviceDiscovery::Disable()
+{
+	// Uninstall device arrival notifications
+	if (deckLinkDiscovery != NULL)
+		deckLinkDiscovery->UninstallDeviceNotifications();
+}
+
+HRESULT     DeckLinkDeviceDiscovery::DeckLinkDeviceArrived (/* in */ IDeckLink* deckLink)
+{
+	// Update UI (add new device to menu) from main thread
+	// AddRef the IDeckLink instance before handing it off to the main thread
+	deckLink->AddRef();
+	dispatch_async(dispatch_get_main_queue(), ^{
+		[uiDelegate addDevice:deckLink];
+	});
+	
+	return S_OK;
+}
+
+HRESULT     DeckLinkDeviceDiscovery::DeckLinkDeviceRemoved (/* in */ IDeckLink* deckLink)
+{
+	dispatch_async(dispatch_get_main_queue(), ^{ [uiDelegate removeDevice:deckLink]; });
+	return S_OK;
+}
+
+HRESULT         DeckLinkDeviceDiscovery::QueryInterface (REFIID iid, LPVOID *ppv)
+{
+	CFUUIDBytes		iunknown;
+	HRESULT			result = E_NOINTERFACE;
+	
+	// Initialise the return result
+	*ppv = NULL;
+	
+	// Obtain the IUnknown interface and compare it the provided REFIID
+	iunknown = CFUUIDGetUUIDBytes(IUnknownUUID);
+	if (memcmp(&iid, &iunknown, sizeof(REFIID)) == 0)
+	{
+		*ppv = this;
+		AddRef();
+		result = S_OK;
+	}
+	else if (memcmp(&iid, &IID_IDeckLinkDeviceNotificationCallback, sizeof(REFIID)) == 0)
+	{
+		*ppv = (IDeckLinkDeviceNotificationCallback*)this;
+		AddRef();
+		result = S_OK;
+	}
+	
+	return result;
+}
+
+ULONG           DeckLinkDeviceDiscovery::AddRef (void)
+{
+	return OSAtomicIncrement32(&refCount);
+}
+
+ULONG           DeckLinkDeviceDiscovery::Release (void)
+{
+	int32_t		newRefValue;
+	
+	newRefValue = OSAtomicDecrement32(&refCount);
+	if (newRefValue == 0)
+	{
+		delete this;
+		return 0;
+	}
+	
+	return newRefValue;
+}
 

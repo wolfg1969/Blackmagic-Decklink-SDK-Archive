@@ -1,5 +1,5 @@
 /* -LICENSE-START-
-** Copyright (c) 2012 Blackmagic Design
+** Copyright (c) 2015 Blackmagic Design
 **
 ** Permission is hereby granted, free of charge, to any person or organization
 ** obtaining a copy of the software and accompanying documentation covered by
@@ -55,17 +55,19 @@ library DeckLinkAPI
 
 // Enumeration Mapping
 
-cpp_quote("typedef unsigned long BMDFrameFlags;")
-cpp_quote("typedef unsigned long BMDVideoInputFlags;")
-cpp_quote("typedef unsigned long BMDVideoInputFormatChangedEvents;")
-cpp_quote("typedef unsigned long BMDDetectedVideoInputFormatFlags;")
-cpp_quote("typedef unsigned long BMDAnalogVideoFlags;")
-cpp_quote("typedef unsigned long BMDDeviceBusyState;")
+cpp_quote("typedef unsigned int BMDFrameFlags;")
+cpp_quote("typedef unsigned int BMDVideoInputFlags;")
+cpp_quote("typedef unsigned int BMDVideoInputFormatChangedEvents;")
+cpp_quote("typedef unsigned int BMDDetectedVideoInputFormatFlags;")
+cpp_quote("typedef unsigned int BMDDeckLinkCapturePassthroughMode;")
+cpp_quote("typedef unsigned int BMDAnalogVideoFlags;")
+cpp_quote("typedef unsigned int BMDDeviceBusyState;")
 cpp_quote("#if 0")
 typedef enum _BMDFrameFlags BMDFrameFlags;
 typedef enum _BMDVideoInputFlags BMDVideoInputFlags;
 typedef enum _BMDVideoInputFormatChangedEvents BMDVideoInputFormatChangedEvents;
 typedef enum _BMDDetectedVideoInputFormatFlags BMDDetectedVideoInputFormatFlags;
+typedef enum _BMDDeckLinkCapturePassthroughMode BMDDeckLinkCapturePassthroughMode;
 typedef enum _BMDAnalogVideoFlags BMDAnalogVideoFlags;
 typedef enum _BMDDeviceBusyState BMDDeviceBusyState;
 cpp_quote("#endif")
@@ -79,6 +81,13 @@ typedef [v1_enum] enum	_BMDVideoOutputFlags {
     bmdVideoOutputRP188                                          = 1 << 2,
     bmdVideoOutputDualStream3D                                   = 1 << 4
 } BMDVideoOutputFlags;
+
+/* Enum BMDPacketType - Type of packet */
+
+typedef [v1_enum] enum	_BMDPacketType {
+    bmdPacketTypeStreamInterruptedMarker                         = /* 'sint' */ 0x73696E74,	// A packet of this type marks the time when a video stream was interrupted, for example by a disconnected cable
+    bmdPacketTypeStreamData                                      = /* 'sdat' */ 0x73646174	// Regular stream data
+} BMDPacketType;
 
 /* Enum BMDFrameFlags - Frame flags */
 
@@ -111,7 +120,15 @@ typedef [v1_enum] enum	_BMDVideoOutputFlags {
 
 [v1_enum] enum	_BMDDetectedVideoInputFormatFlags {
     bmdDetectedVideoInputYCbCr422                                = 1 << 0,
-    bmdDetectedVideoInputRGB444                                  = 1 << 1
+    bmdDetectedVideoInputRGB444                                  = 1 << 1,
+    bmdDetectedVideoInputDualStream3D                            = 1 << 2
+};
+
+/* Enum BMDDeckLinkCapturePassthroughMode - Enumerates whether the video output is electrically connected to the video input or if the clean switching mode is enabled */
+
+[v1_enum] enum	_BMDDeckLinkCapturePassthroughMode {
+    bmdDeckLinkCapturePassthroughModeDirect                      = /* 'pdir' */ 0x70646972,
+    bmdDeckLinkCapturePassthroughModeCleanSwitch                 = /* 'pcln' */ 0x70636C6E
 };
 
 /* Enum BMDOutputFrameCompletionResult - Frame Completion Callback */
@@ -129,6 +146,12 @@ typedef [v1_enum] enum	_BMDReferenceStatus {
     bmdReferenceNotSupportedByHardware                           = 1 << 0,
     bmdReferenceLocked                                           = 1 << 1
 } BMDReferenceStatus;
+
+/* Enum BMDAudioFormat - Audio Format */
+
+typedef [v1_enum] enum	_BMDAudioFormat {
+    bmdAudioFormatPCM                                            = /* 'lpcm' */ 0x6C70636D	// Linear signed PCM samples
+} BMDAudioFormat;
 
 /* Enum BMDAudioSampleRate - Audio sample rates supported for output/input */
 
@@ -163,7 +186,7 @@ typedef [v1_enum] enum	_BMDDisplayModeSupport {
 
 typedef [v1_enum] enum	_BMDTimecodeFormat {
     bmdTimecodeRP188VITC1                                        = /* 'rpv1' */ 0x72707631,	// RP188 timecode where DBB1 equals VITC1 (line 9)
-    bmdTimecodeRP188VITC2                                        = /* 'rp12' */ 0x72703132,	// RP188 timecode where DBB1 equals VITC2 (line 571)
+    bmdTimecodeRP188VITC2                                        = /* 'rp12' */ 0x72703132,	// RP188 timecode where DBB1 equals VITC2 (line 9 for progressive or line 571 for interlaced/PsF)
     bmdTimecodeRP188LTC                                          = /* 'rplt' */ 0x72706C74,	// RP188 timecode where DBB1 equals LTC (line 10)
     bmdTimecodeRP188Any                                          = /* 'rp18' */ 0x72703138,	// For capture: return the first valid timecode in {VITC1, LTC ,VITC2} - For playback: set the timecode as VITC1
     bmdTimecodeVITC                                              = /* 'vitc' */ 0x76697463,
@@ -177,14 +200,6 @@ typedef [v1_enum] enum	_BMDTimecodeFormat {
     bmdAnalogVideoFlagCompositeSetup75                           = 1 << 0,
     bmdAnalogVideoFlagComponentBetacamLevels                     = 1 << 1
 };
-
-/* Enum BMDAudioConnection - Audio connection types */
-
-typedef [v1_enum] enum	_BMDAudioConnection {
-    bmdAudioConnectionEmbedded                                   = /* 'embd' */ 0x656D6264,
-    bmdAudioConnectionAESEBU                                     = /* 'aes ' */ 0x61657320,
-    bmdAudioConnectionAnalog                                     = /* 'anlg' */ 0x616E6C67
-} BMDAudioConnection;
 
 /* Enum BMDAudioOutputAnalogAESSwitch - Audio output Analog/AESEBU switch */
 
@@ -243,6 +258,29 @@ typedef [v1_enum] enum	_BMDIdleVideoOutputOperation {
     bmdIdleVideoOutputDesktop                                    = /* 'desk' */ 0x6465736B
 } BMDIdleVideoOutputOperation;
 
+/* Enum BMDVideoEncoderFrameCodingMode - Video frame coding mode */
+
+typedef [v1_enum] enum	_BMDVideoEncoderFrameCodingMode {
+    bmdVideoEncoderFrameCodingModeInter                          = /* 'inte' */ 0x696E7465,
+    bmdVideoEncoderFrameCodingModeIntra                          = /* 'intr' */ 0x696E7472
+} BMDVideoEncoderFrameCodingMode;
+
+/* Enum BMDLinkConfiguration - Video link configuration */
+
+typedef [v1_enum] enum	_BMDLinkConfiguration {
+    bmdLinkConfigurationSingleLink                               = /* 'lcsl' */ 0x6C63736C,
+    bmdLinkConfigurationDualLink                                 = /* 'lcdl' */ 0x6C63646C,
+    bmdLinkConfigurationQuadLink                                 = /* 'lcql' */ 0x6C63716C
+} BMDLinkConfiguration;
+
+/* Enum BMDDeviceInterface - Device interface type */
+
+typedef [v1_enum] enum	_BMDDeviceInterface {
+    bmdDeviceInterfacePCI                                        = /* 'pci ' */ 0x70636920,
+    bmdDeviceInterfaceUSB                                        = /* 'usb ' */ 0x75736220,
+    bmdDeviceInterfaceThunderbolt                                = /* 'thun' */ 0x7468756E
+} BMDDeviceInterface;
+
 /* Enum BMDDeckLinkAttributeID - DeckLink Attribute ID */
 
 typedef [v1_enum] enum	_BMDDeckLinkAttributeID {
@@ -260,16 +298,35 @@ typedef [v1_enum] enum	_BMDDeckLinkAttributeID {
     BMDDeckLinkHasVideoInputAntiAliasingFilter                   = /* 'aafl' */ 0x6161666C,
     BMDDeckLinkHasBypass                                         = /* 'byps' */ 0x62797073,
     BMDDeckLinkSupportsDesktopDisplay                            = /* 'extd' */ 0x65787464,
+    BMDDeckLinkSupportsClockTimingAdjustment                     = /* 'ctad' */ 0x63746164,
+    BMDDeckLinkSupportsFullDuplex                                = /* 'fdup' */ 0x66647570,
+    BMDDeckLinkSupportsFullFrameReferenceInputTimingOffset       = /* 'frin' */ 0x6672696E,
+    BMDDeckLinkSupportsSMPTELevelAOutput                         = /* 'lvla' */ 0x6C766C61,
+    BMDDeckLinkSupportsDualLinkSDI                               = /* 'sdls' */ 0x73646C73,
+    BMDDeckLinkSupportsQuadLinkSDI                               = /* 'sqls' */ 0x73716C73,
+    BMDDeckLinkSupportsIdleOutput                                = /* 'idou' */ 0x69646F75,
+    BMDDeckLinkHasLTCTimecodeInput                               = /* 'hltc' */ 0x686C7463,
 
     /* Integers */
 
     BMDDeckLinkMaximumAudioChannels                              = /* 'mach' */ 0x6D616368,
+    BMDDeckLinkMaximumAnalogAudioChannels                        = /* 'aach' */ 0x61616368,
     BMDDeckLinkNumberOfSubDevices                                = /* 'nsbd' */ 0x6E736264,
     BMDDeckLinkSubDeviceIndex                                    = /* 'subi' */ 0x73756269,
+    BMDDeckLinkPersistentID                                      = /* 'peid' */ 0x70656964,
+    BMDDeckLinkTopologicalID                                     = /* 'toid' */ 0x746F6964,
     BMDDeckLinkVideoOutputConnections                            = /* 'vocn' */ 0x766F636E,
     BMDDeckLinkVideoInputConnections                             = /* 'vicn' */ 0x7669636E,
+    BMDDeckLinkAudioOutputConnections                            = /* 'aocn' */ 0x616F636E,
+    BMDDeckLinkAudioInputConnections                             = /* 'aicn' */ 0x6169636E,
     BMDDeckLinkDeviceBusyState                                   = /* 'dbst' */ 0x64627374,
     BMDDeckLinkVideoIOSupport                                    = /* 'vios' */ 0x76696F73,	// Returns a BMDVideoIOSupport bit field
+    BMDDeckLinkDeckControlConnections                            = /* 'dccn' */ 0x6463636E,
+    BMDDeckLinkDeviceInterface                                   = /* 'dbus' */ 0x64627573,	// Returns a BMDDeviceInterface
+    BMDDeckLinkAudioInputRCAChannelCount                         = /* 'airc' */ 0x61697263,
+    BMDDeckLinkAudioInputXLRChannelCount                         = /* 'aixc' */ 0x61697863,
+    BMDDeckLinkAudioOutputRCAChannelCount                        = /* 'aorc' */ 0x616F7263,
+    BMDDeckLinkAudioOutputXLRChannelCount                        = /* 'aoxc' */ 0x616F7863,
 
     /* Floats */
 
@@ -277,10 +334,15 @@ typedef [v1_enum] enum	_BMDDeckLinkAttributeID {
     BMDDeckLinkVideoInputGainMaximum                             = /* 'vigx' */ 0x76696778,
     BMDDeckLinkVideoOutputGainMinimum                            = /* 'vogm' */ 0x766F676D,
     BMDDeckLinkVideoOutputGainMaximum                            = /* 'vogx' */ 0x766F6778,
+    BMDDeckLinkMicrophoneInputGainMinimum                        = /* 'migm' */ 0x6D69676D,
+    BMDDeckLinkMicrophoneInputGainMaximum                        = /* 'migx' */ 0x6D696778,
 
     /* Strings */
 
-    BMDDeckLinkSerialPortDeviceName                              = /* 'slpn' */ 0x736C706E
+    BMDDeckLinkSerialPortDeviceName                              = /* 'slpn' */ 0x736C706E,
+    BMDDeckLinkVendorName                                        = /* 'vndr' */ 0x766E6472,
+    BMDDeckLinkDisplayName                                       = /* 'dspn' */ 0x6473706E,
+    BMDDeckLinkModelName                                         = /* 'mdln' */ 0x6D646C6E
 } BMDDeckLinkAttributeID;
 
 /* Enum BMDDeckLinkAPIInformationID - DeckLinkAPI information ID */
@@ -314,28 +376,44 @@ typedef [v1_enum] enum	_BMD3DPreviewFormat {
     bmd3DPreviewFormatTopBottom                                  = /* 'topb' */ 0x746F7062
 } BMD3DPreviewFormat;
 
+/* Enum BMDNotifications - Events that can be subscribed through IDeckLinkNotification */
+
+typedef [v1_enum] enum	_BMDNotifications {
+    bmdPreferencesChanged                                        = /* 'pref' */ 0x70726566
+} BMDNotifications;
+
 // Forward Declarations
 
 interface IDeckLinkVideoOutputCallback;
 interface IDeckLinkInputCallback;
+interface IDeckLinkEncoderInputCallback;
 interface IDeckLinkMemoryAllocator;
 interface IDeckLinkAudioOutputCallback;
 interface IDeckLinkIterator;
 interface IDeckLinkAPIInformation;
 interface IDeckLinkOutput;
 interface IDeckLinkInput;
+interface IDeckLinkEncoderInput;
 interface IDeckLinkVideoFrame;
 interface IDeckLinkMutableVideoFrame;
 interface IDeckLinkVideoFrame3DExtensions;
 interface IDeckLinkVideoInputFrame;
 interface IDeckLinkVideoFrameAncillary;
+interface IDeckLinkEncoderPacket;
+interface IDeckLinkEncoderVideoPacket;
+interface IDeckLinkEncoderAudioPacket;
+interface IDeckLinkH265NALPacket;
 interface IDeckLinkAudioInputPacket;
 interface IDeckLinkScreenPreviewCallback;
 interface IDeckLinkGLScreenPreviewHelper;
 interface IDeckLinkDX9ScreenPreviewHelper;
+interface IDeckLinkNotificationCallback;
+interface IDeckLinkNotification;
 interface IDeckLinkAttributes;
 interface IDeckLinkKeyer;
 interface IDeckLinkVideoConversion;
+interface IDeckLinkDeviceNotificationCallback;
+interface IDeckLinkDiscovery;
 
 /* Interface IDeckLinkVideoOutputCallback - Frame completion callback. */
 
@@ -361,6 +439,19 @@ interface IDeckLinkVideoConversion;
     HRESULT VideoInputFrameArrived([in] IDeckLinkVideoInputFrame* videoFrame, [in] IDeckLinkAudioInputPacket* audioPacket);
 };
 
+/* Interface IDeckLinkEncoderInputCallback - Frame arrival callback. */
+
+[
+    object,
+    uuid(ACF13E61-F4A0-4974-A6A7-59AFF6268B31),
+    helpstring("Frame arrival callback.")
+] interface IDeckLinkEncoderInputCallback : IUnknown
+{
+    HRESULT VideoInputSignalChanged([in] BMDVideoInputFormatChangedEvents notificationEvents, [in] IDeckLinkDisplayMode *newDisplayMode, [in] BMDDetectedVideoInputFormatFlags detectedSignalFlags);
+    HRESULT VideoPacketArrived([in] IDeckLinkEncoderVideoPacket* videoPacket);
+    HRESULT AudioPacketArrived([in] IDeckLinkEncoderAudioPacket* audioPacket);
+};
+
 /* Interface IDeckLinkMemoryAllocator - Memory allocator for video frames. */
 
 [
@@ -370,7 +461,7 @@ interface IDeckLinkVideoConversion;
     helpstring("Memory allocator for video frames.")
 ] interface IDeckLinkMemoryAllocator : IUnknown
 {
-    HRESULT AllocateBuffer([in] unsigned long bufferSize, [out] void **allocatedBuffer);
+    HRESULT AllocateBuffer([in] unsigned int bufferSize, [out] void **allocatedBuffer);
     HRESULT ReleaseBuffer([in] void *buffer);
 
     HRESULT Commit(void);
@@ -418,7 +509,7 @@ interface IDeckLinkVideoConversion;
 
 [
     object,
-    uuid(A3EF0963-0862-44ED-92A9-EE89ABF431C7),
+    uuid(CC5C8A6E-3F2F-4B3A-87EA-FD78AF300564),
     local, 
     helpstring("Created by QueryInterface from IDeckLink.")
 ] interface IDeckLinkOutput : IUnknown
@@ -434,26 +525,26 @@ interface IDeckLinkVideoConversion;
     HRESULT DisableVideoOutput(void);
 
     HRESULT SetVideoOutputFrameMemoryAllocator([in] IDeckLinkMemoryAllocator *theAllocator);
-    HRESULT CreateVideoFrame([in] long width, [in] long height, [in] long rowBytes, [in] BMDPixelFormat pixelFormat, [in] BMDFrameFlags flags, [out] IDeckLinkMutableVideoFrame **outFrame);
+    HRESULT CreateVideoFrame([in] int width, [in] int height, [in] int rowBytes, [in] BMDPixelFormat pixelFormat, [in] BMDFrameFlags flags, [out] IDeckLinkMutableVideoFrame **outFrame);
     HRESULT CreateAncillaryData([in] BMDPixelFormat pixelFormat, [out] IDeckLinkVideoFrameAncillary **outBuffer);
 
     HRESULT DisplayVideoFrameSync([in] IDeckLinkVideoFrame *theFrame);
     HRESULT ScheduleVideoFrame([in] IDeckLinkVideoFrame *theFrame, [in] BMDTimeValue displayTime, [in] BMDTimeValue displayDuration, [in] BMDTimeScale timeScale);
     HRESULT SetScheduledFrameCompletionCallback([in] IDeckLinkVideoOutputCallback *theCallback);
-    HRESULT GetBufferedVideoFrameCount([out] unsigned long *bufferedFrameCount);
+    HRESULT GetBufferedVideoFrameCount([out] unsigned int *bufferedFrameCount);
 
     /* Audio Output */
 
-    HRESULT EnableAudioOutput([in] BMDAudioSampleRate sampleRate, [in] BMDAudioSampleType sampleType, [in] unsigned long channelCount, [in] BMDAudioOutputStreamType streamType);
+    HRESULT EnableAudioOutput([in] BMDAudioSampleRate sampleRate, [in] BMDAudioSampleType sampleType, [in] unsigned int channelCount, [in] BMDAudioOutputStreamType streamType);
     HRESULT DisableAudioOutput(void);
 
-    HRESULT WriteAudioSamplesSync([in] void *buffer, [in] unsigned long sampleFrameCount, [out] unsigned long *sampleFramesWritten);
+    HRESULT WriteAudioSamplesSync([in] void *buffer, [in] unsigned int sampleFrameCount, [out] unsigned int *sampleFramesWritten);
 
     HRESULT BeginAudioPreroll(void);
     HRESULT EndAudioPreroll(void);
-    HRESULT ScheduleAudioSamples([in] void *buffer, [in] unsigned long sampleFrameCount, [in] BMDTimeValue streamTime, [in] BMDTimeScale timeScale, [out] unsigned long *sampleFramesWritten);
+    HRESULT ScheduleAudioSamples([in] void *buffer, [in] unsigned int sampleFrameCount, [in] BMDTimeValue streamTime, [in] BMDTimeScale timeScale, [out] unsigned int *sampleFramesWritten);
 
-    HRESULT GetBufferedAudioSampleFrameCount([out] unsigned long *bufferedSampleFrameCount);
+    HRESULT GetBufferedAudioSampleFrameCount([out] unsigned int *bufferedSampleFrameCount);
     HRESULT FlushBufferedAudioSamples(void);
 
     HRESULT SetAudioCallback([in] IDeckLinkAudioOutputCallback *theCallback);
@@ -469,6 +560,7 @@ interface IDeckLinkVideoConversion;
     /* Hardware Timing */
 
     HRESULT GetHardwareReferenceClock([in] BMDTimeScale desiredTimeScale, [out] BMDTimeValue *hardwareTime, [out] BMDTimeValue *timeInFrame, [out] BMDTimeValue *ticksPerFrame);
+    HRESULT GetFrameCompletionReferenceTimestamp([in] IDeckLinkVideoFrame *theFrame, [in] BMDTimeScale desiredTimeScale, [out] BMDTimeValue *frameCompletionTimestamp);
 };
 
 /* Interface IDeckLinkInput - Created by QueryInterface from IDeckLink. */
@@ -488,14 +580,14 @@ interface IDeckLinkVideoConversion;
 
     HRESULT EnableVideoInput([in] BMDDisplayMode displayMode, [in] BMDPixelFormat pixelFormat, [in] BMDVideoInputFlags flags);
     HRESULT DisableVideoInput(void);
-    HRESULT GetAvailableVideoFrameCount([out] unsigned long *availableFrameCount);
+    HRESULT GetAvailableVideoFrameCount([out] unsigned int *availableFrameCount);
     HRESULT SetVideoInputFrameMemoryAllocator([in] IDeckLinkMemoryAllocator *theAllocator);
 
     /* Audio Input */
 
-    HRESULT EnableAudioInput([in] BMDAudioSampleRate sampleRate, [in] BMDAudioSampleType sampleType, [in] unsigned long channelCount);
+    HRESULT EnableAudioInput([in] BMDAudioSampleRate sampleRate, [in] BMDAudioSampleType sampleType, [in] unsigned int channelCount);
     HRESULT DisableAudioInput(void);
-    HRESULT GetAvailableAudioSampleFrameCount([out] unsigned long *availableSampleFrameCount);
+    HRESULT GetAvailableAudioSampleFrameCount([out] unsigned int *availableSampleFrameCount);
 
     /* Input Control */
 
@@ -504,6 +596,43 @@ interface IDeckLinkVideoConversion;
     HRESULT PauseStreams(void);
     HRESULT FlushStreams(void);
     HRESULT SetCallback([in] IDeckLinkInputCallback *theCallback);
+
+    /* Hardware Timing */
+
+    HRESULT GetHardwareReferenceClock([in] BMDTimeScale desiredTimeScale, [out] BMDTimeValue *hardwareTime, [out] BMDTimeValue *timeInFrame, [out] BMDTimeValue *ticksPerFrame);
+};
+
+/* Interface IDeckLinkEncoderInput - Created by QueryInterface from IDeckLink. */
+
+[
+    object,
+    uuid(270587DA-6B7D-42E7-A1F0-6D853F581185),
+    helpstring("Created by QueryInterface from IDeckLink.")
+] interface IDeckLinkEncoderInput : IUnknown
+{
+    HRESULT DoesSupportVideoMode([in] BMDDisplayMode displayMode, [in] BMDPixelFormat pixelFormat, [in] BMDVideoInputFlags flags, [out] BMDDisplayModeSupport *result, [out] IDeckLinkDisplayMode **resultDisplayMode);
+    HRESULT GetDisplayModeIterator([out] IDeckLinkDisplayModeIterator **iterator);
+
+    /* Video Input */
+
+    HRESULT EnableVideoInput([in] BMDDisplayMode displayMode, [in] BMDPixelFormat pixelFormat, [in] BMDVideoInputFlags flags);
+    HRESULT DisableVideoInput(void);
+    HRESULT GetAvailablePacketsCount([out] unsigned int *availablePacketsCount);
+    HRESULT SetMemoryAllocator([in] IDeckLinkMemoryAllocator *theAllocator);
+
+    /* Audio Input */
+
+    HRESULT EnableAudioInput([in] BMDAudioFormat audioFormat, [in] BMDAudioSampleRate sampleRate, [in] BMDAudioSampleType sampleType, [in] unsigned int channelCount);
+    HRESULT DisableAudioInput(void);
+    HRESULT GetAvailableAudioSampleFrameCount([out] unsigned int *availableSampleFrameCount);
+
+    /* Input Control */
+
+    HRESULT StartStreams(void);
+    HRESULT StopStreams(void);
+    HRESULT PauseStreams(void);
+    HRESULT FlushStreams(void);
+    HRESULT SetCallback([in] IDeckLinkEncoderInputCallback *theCallback);
 
     /* Hardware Timing */
 
@@ -583,9 +712,65 @@ interface IDeckLinkVideoConversion;
 ] interface IDeckLinkVideoFrameAncillary : IUnknown
 {
 
-    HRESULT GetBufferForVerticalBlankingLine([in] unsigned long lineNumber, [out] void **buffer);
+    HRESULT GetBufferForVerticalBlankingLine([in] unsigned int lineNumber, [out] void **buffer);
     BMDPixelFormat GetPixelFormat(void);
     BMDDisplayMode GetDisplayMode(void);
+};
+
+/* Interface IDeckLinkEncoderPacket - Interface to encapsulate an encoded packet. */
+
+[
+    object,
+    uuid(B693F36C-316E-4AF1-B6C2-F389A4BCA620),
+    local, 
+    helpstring("Interface to encapsulate an encoded packet.")
+] interface IDeckLinkEncoderPacket : IUnknown
+{
+    HRESULT GetBytes([out] void **buffer);
+    long GetSize(void);
+    HRESULT GetStreamTime([out] BMDTimeValue *frameTime, [in] BMDTimeScale timeScale);
+    BMDPacketType GetPacketType(void);
+};
+
+/* Interface IDeckLinkEncoderVideoPacket - Provided by the IDeckLinkEncoderInput video packet arrival callback. */
+
+[
+    object,
+    uuid(4E7FD944-E8C7-4EAC-B8C0-7B77F80F5AE0),
+    local, 
+    helpstring("Provided by the IDeckLinkEncoderInput video packet arrival callback.")
+] interface IDeckLinkEncoderVideoPacket : IDeckLinkEncoderPacket
+{
+    BMDPixelFormat GetPixelFormat(void);
+    HRESULT GetHardwareReferenceTimestamp([in] BMDTimeScale timeScale, [out] BMDTimeValue *frameTime, [out] BMDTimeValue *frameDuration);
+
+    HRESULT GetTimecode([in] BMDTimecodeFormat format, [out] IDeckLinkTimecode **timecode);
+};
+
+/* Interface IDeckLinkEncoderAudioPacket - Provided by the IDeckLinkEncoderInput audio packet arrival callback. */
+
+[
+    object,
+    uuid(49E8EDC8-693B-4E14-8EF6-12C658F5A07A),
+    local, 
+    helpstring("Provided by the IDeckLinkEncoderInput audio packet arrival callback.")
+] interface IDeckLinkEncoderAudioPacket : IDeckLinkEncoderPacket
+{
+    BMDAudioFormat GetAudioFormat(void);
+};
+
+/* Interface IDeckLinkH265NALPacket - Obtained through QueryInterface() on an IDeckLinkEncoderVideoPacket object */
+
+[
+    object,
+    uuid(639C8E0B-68D5-4BDE-A6D4-95F3AEAFF2E7),
+    local, 
+    helpstring("Obtained through QueryInterface() on an IDeckLinkEncoderVideoPacket object")
+] interface IDeckLinkH265NALPacket : IDeckLinkEncoderVideoPacket
+{
+    HRESULT GetUnitType([out] unsigned char *unitType);
+    HRESULT GetBytesNoPrefix([out] void **buffer);
+    long GetSizeNoPrefix(void);
 };
 
 /* Interface IDeckLinkAudioInputPacket - Provided by the IDeckLinkInput callback. */
@@ -647,6 +832,31 @@ interface IDeckLinkVideoConversion;
     HRESULT Set3DPreviewFormat([in] BMD3DPreviewFormat previewFormat);
 };
 
+/* Interface IDeckLinkNotificationCallback - DeckLink Notification Callback Interface */
+
+[
+    object,
+    uuid(b002a1ec-070d-4288-8289-bd5d36e5ff0d),
+    local, 
+    helpstring("DeckLink Notification Callback Interface")
+] interface IDeckLinkNotificationCallback : IUnknown
+{
+    HRESULT Notify([in] BMDNotifications topic, [in] ULONGLONG param1, [in] ULONGLONG param2);
+};
+
+/* Interface IDeckLinkNotification - DeckLink Notification interface */
+
+[
+    object,
+    uuid(0a1fb207-e215-441b-9b19-6fa1575946c5),
+    local, 
+    helpstring("DeckLink Notification interface")
+] interface IDeckLinkNotification : IUnknown
+{
+    HRESULT Subscribe([in] BMDNotifications topic, [in] IDeckLinkNotificationCallback *theCallback);
+    HRESULT Unsubscribe([in] BMDNotifications topic, [in] IDeckLinkNotificationCallback *theCallback);
+};
+
 /* Interface IDeckLinkAttributes - DeckLink Attribute interface */
 
 [
@@ -673,8 +883,8 @@ interface IDeckLinkVideoConversion;
 {
     HRESULT Enable([in] BOOL isExternal);
     HRESULT SetLevel([in] unsigned char level);
-    HRESULT RampUp([in] unsigned long numberOfFrames);
-    HRESULT RampDown([in] unsigned long numberOfFrames);
+    HRESULT RampUp([in] unsigned int numberOfFrames);
+    HRESULT RampDown([in] unsigned int numberOfFrames);
     HRESULT Disable(void);
 };
 
@@ -688,6 +898,30 @@ interface IDeckLinkVideoConversion;
 ] interface IDeckLinkVideoConversion : IUnknown
 {
     HRESULT ConvertFrame([in] IDeckLinkVideoFrame* srcFrame, [in] IDeckLinkVideoFrame* dstFrame);
+};
+
+/* Interface IDeckLinkDeviceNotificationCallback - DeckLink device arrival/removal notification callbacks */
+
+[
+    object,
+    uuid(4997053B-0ADF-4CC8-AC70-7A50C4BE728F),
+    helpstring("DeckLink device arrival/removal notification callbacks")
+] interface IDeckLinkDeviceNotificationCallback : IUnknown
+{
+    HRESULT DeckLinkDeviceArrived([in] IDeckLink* deckLinkDevice);
+    HRESULT DeckLinkDeviceRemoved([in] IDeckLink* deckLinkDevice);
+};
+
+/* Interface IDeckLinkDiscovery - DeckLink device discovery */
+
+[
+    object,
+    uuid(CDBF631C-BC76-45FA-B44D-C55059BC6101),
+    helpstring("DeckLink device discovery")
+] interface IDeckLinkDiscovery : IUnknown
+{
+    HRESULT InstallDeviceNotifications([in] IDeckLinkDeviceNotificationCallback* deviceNotificationCallback);
+    HRESULT UninstallDeviceNotifications(void);
 };
 
 /* Coclasses */
@@ -734,8 +968,19 @@ importlib("stdole2.tlb");
     [default] interface IDeckLinkVideoConversion;
 };
 
+[
+    uuid(1073A05C-D885-47E9-B3C6-129B3F9F648B),
+    helpstring("CDeckLinkDiscovery Class")
+] coclass CDeckLinkDiscovery
+{
+    [default] interface IDeckLinkDiscovery;
+};
+
 
 // import deprecated interfaces
+#include "DeckLinkAPI_v10_4.idl"
+#include "DeckLinkAPI_v10_2.idl"
+#include "DeckLinkAPI_v9_9.idl"
 #include "DeckLinkAPI_v9_2.idl"
 #include "DeckLinkAPI_v8_1.idl"
 #include "DeckLinkAPI_v8_0.idl"

@@ -33,6 +33,7 @@
 #define __BMDOpenGLOutput_h__
 
 #include <QtOpenGL>
+#include <GL/glu.h>
 #include "GLExtensions.h"
 
 #include "DeckLinkAPI.h"

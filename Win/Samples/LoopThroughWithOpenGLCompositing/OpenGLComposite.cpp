@@ -780,7 +780,7 @@ ULONG STDMETHODCALLTYPE		PinnedMemoryAllocator::Release(void)
 }
 
 // IDeckLinkMemoryAllocator methods
-HRESULT STDMETHODCALLTYPE	PinnedMemoryAllocator::AllocateBuffer (unsigned long bufferSize, void* *allocatedBuffer)
+HRESULT STDMETHODCALLTYPE	PinnedMemoryAllocator::AllocateBuffer (unsigned int bufferSize, void* *allocatedBuffer)
 {
 	if (mFrameCache.empty())
 	{

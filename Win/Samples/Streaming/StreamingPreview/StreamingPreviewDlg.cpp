@@ -66,6 +66,8 @@ BEGIN_MESSAGE_MAP(CStreamingPreviewDlg, CDialog)
 	//}}AFX_MSG_MAP
 	ON_BN_CLICKED(IDC_BUTTON_START_PREVIEW, &CStreamingPreviewDlg::OnBnClickedOk)
 	ON_CBN_SELENDOK(IDC_COMBO_INPUT_MODE, &CStreamingPreviewDlg::OnInputModeChanged)
+	ON_MESSAGE(WM_PREVIEWSTART, &CStreamingPreviewDlg::StartPreview)
+	ON_MESSAGE(WM_PREVIEWSTOP, &CStreamingPreviewDlg::StopPreview)
 END_MESSAGE_MAP()
 
 
@@ -162,52 +164,52 @@ HCURSOR CStreamingPreviewDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-// IUnknown
-
 void CStreamingPreviewDlg::OnBnClickedOk()
 {
 	OutputDebugString(_T("OnBnClickedOk\n"));
 
-	if (m_playing)
-		StopPreview();
-	else
-		StartPreview();
+	if (m_streamingDeviceInput)
+	{
+		if (m_deviceMode == bmdStreamingDeviceEncoding)
+		{
+			m_streamingDeviceInput->StopCapture();
+		}
+		else if (m_inputMode != bmdModeUnknown)
+		{
+			IBMDStreamingVideoEncodingMode* encodingMode = (IBMDStreamingVideoEncodingMode*)m_videoEncodingCombo.GetItemDataPtr(m_videoEncodingCombo.GetCurSel());
+			m_streamingDeviceInput->SetVideoEncodingMode(encodingMode);
+			m_streamingDeviceInput->StartCapture();
+		}
+	}
 }
 
-void CStreamingPreviewDlg::StartPreview()
+afx_msg LRESULT CStreamingPreviewDlg::StartPreview(WPARAM, LPARAM)
 {
-	if (m_playing)
-		return;
-	
-	IBMDStreamingVideoEncodingMode* encodingMode = (IBMDStreamingVideoEncodingMode*)m_videoEncodingCombo.GetItemDataPtr(m_videoEncodingCombo.GetCurSel());
+	if (m_previewWindow)
+		return 0;
 
-	m_streamingDeviceInput->SetVideoEncodingMode(encodingMode);
+	IBMDStreamingVideoEncodingMode* encodingMode = (IBMDStreamingVideoEncodingMode*)m_videoEncodingCombo.GetItemDataPtr(m_videoEncodingCombo.GetCurSel());
 
 	int width, height;
 	width = encodingMode->GetDestWidth();
 	height = encodingMode->GetDestHeight();
-	
-	// Start playback
-	m_playing = true;
 
-	m_previewWindow = PreviewWindow::CreateInstance(NULL, this);
-	m_previewWindow->SetWindowSize(width, height);
-	m_decoder->SetPreviewWindow(m_previewWindow);
-	
-	m_streamingDeviceInput->StartCapture();
+	m_previewWindow = PreviewWindow::CreateInstance(PreviewWindowClosedFunction, this);
+	if (m_previewWindow)
+	{
+		m_previewWindow->SetWindowSize(width, height);
+		m_decoder->SetPreviewWindow(m_previewWindow);
+	}
+
+	return 0;
 }
 
-void CStreamingPreviewDlg::StopPreview()
+afx_msg LRESULT CStreamingPreviewDlg::StopPreview(WPARAM, LPARAM)
 {
-	m_playing = false;
-
-	if (m_streamingDeviceInput)
-		m_streamingDeviceInput->StopCapture();
-
 	m_decoder->SetPreviewWindow(NULL);
-
 	delete m_previewWindow;
 	m_previewWindow = NULL;
+	return 0;
 }
 
 void CStreamingPreviewDlg::OnInputModeChanged()
@@ -255,13 +257,20 @@ void CStreamingPreviewDlg::UpdateUIForModeChanges()
 	bool start = m_deviceMode != bmdStreamingDeviceEncoding;
 	m_startButton.SetWindowText(start ? _T("Start Preview") : _T("Stop Preview"));
 
+	// Preview Window. These operations must be done by the main GUI thread so that the preview window takes part in the same GUI event queue
 	if (m_deviceMode == bmdStreamingDeviceEncoding)
 	{
 		if (m_inputMode != bmdModeUnknown)
-			StartPreview();
+		{
+			// If the app opened and an encoding session was already running then the BMDStreamingAPI won't give us packets from the stream until
+			// we tell the API to start.
+			m_streamingDeviceInput->StartCapture();
+
+			this->PostMessage(WM_PREVIEWSTART);
+		}
 	}
 	else
-		StopPreview();
+		this->PostMessage(WM_PREVIEWSTOP);
 }
 
 void CStreamingPreviewDlg::UpdateUIForNewDevice()
@@ -357,7 +366,7 @@ void CStreamingPreviewDlg::UpdateEncodingPresetsUIForInputMode()
 
 	IBMDStreamingVideoEncodingModePresetIterator* presetIterator;
 	
-	if (SUCCEEDED(m_streamingDeviceInput->GetVideoEncodingModePresetIterator(inputMode, &presetIterator)))
+	if (inputMode != bmdModeUnknown && SUCCEEDED(m_streamingDeviceInput->GetVideoEncodingModePresetIterator(inputMode, &presetIterator)))
 	{
 		IBMDStreamingVideoEncodingMode* encodingMode = NULL;
 		BSTR encodingModeName;
@@ -409,8 +418,10 @@ void CStreamingPreviewDlg::OnPreviewWindowClosed(PreviewWindow* previewWindow)
 	if (previewWindow != m_previewWindow)
 		return;
 
-	if (m_playing)
-		OnBnClickedOk();
+	if (m_streamingDeviceInput && m_deviceMode == bmdStreamingDeviceEncoding)
+	{
+		this->PostMessage(WM_CLOSE);
+	}
 }
 
 HRESULT CStreamingPreviewDlg::QueryInterface(REFIID iid, LPVOID* ppv)
@@ -448,8 +459,6 @@ HRESULT CStreamingPreviewDlg::StreamingDeviceArrived(IDeckLink* device)
 	HRESULT			result;
 	// These messages will happen on the main loop as a result
 	// of the message pump.
-
-	m_playing = false;
 
 	// Check we don't already have a device.
 	if (m_streamingDevice != NULL)
@@ -516,7 +525,7 @@ HRESULT CStreamingPreviewDlg::StreamingDeviceRemoved(IDeckLink* device)
 	m_streamingDeviceInput = NULL;
 	m_streamingDevice = NULL;
 
-	StopPreview();
+	this->PostMessage(WM_PREVIEWSTOP);
 	UpdateUIForNoDevice();
 
 	return S_OK;
@@ -587,7 +596,6 @@ HRESULT CStreamingPreviewDlg::H264VideoInputModeChanged(void)
 
 	if (m_inputMode == bmdModeUnknown)
 	{
-		m_videoInputCombo.ResetContent();
 		int index = m_videoInputCombo.AddString(_T("No Input"));
 		m_videoInputCombo.SetItemData(index, bmdModeUnknown);
 	}

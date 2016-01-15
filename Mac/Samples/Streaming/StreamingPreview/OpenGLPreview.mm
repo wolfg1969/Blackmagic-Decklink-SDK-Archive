@@ -138,16 +138,22 @@ static CVReturn DisplayLinkCallbackFunction(CVDisplayLinkRef	displayLink,
 {
 	uint64_t frameTime;
 	nal->GetDisplayTime(m_hostTimeScale, &frameTime);
-		
-	// Hold a reference to the pixel buffer
-	::CVPixelBufferRetain(pixBuf);
 
 	[m_frameMapLock lock];
-	m_frameMap[frameTime] = pixBuf;
+	if (m_frameMap.find(frameTime) != m_frameMap.end())
+	{
+		// Using this particular decoder we haven't set up any deinterlacing (kICMFieldMode_DeinterlaceFields), so
+		// you'll be able to receive an individual image per field when the destination encode is interlaced. For sample
+		// app simplicity, here we will drop every second field.
+	}
+	else
+	{
+		::CVPixelBufferRetain(pixBuf);
+		m_frameMap[frameTime] = pixBuf;
+		if (m_firstFrameArrivalTime == 0)
+			m_firstFrameArrivalTime = GetMicros();
+	}
 	[m_frameMapLock unlock];
-
-	if (m_firstFrameArrivalTime == 0)
-		m_firstFrameArrivalTime = GetMicros();
 }
 
 - (void)putPixbufInTexture:(CVPixelBufferRef)pixBuf

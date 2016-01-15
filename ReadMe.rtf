@@ -1,17 +1,579 @@
-{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf340
+{\rtf1\ansi\ansicpg1252\cocoartf1347\cocoasubrtf570
 \cocoascreenfonts1{\fonttbl\f0\fnil\fcharset0 LucidaGrande;\f1\fswiss\fcharset0 Helvetica;}
 {\colortbl;\red255\green255\blue255;}
-\paperw11900\paperh16840\vieww18140\viewh16280\viewkind0
+\paperw11900\paperh16840\vieww19000\viewh20840\viewkind0
 \deftab720
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardeftab720
 
-\f0\b\fs28 \cf0 Blackmagic Design DeckLink SDK 9.7\
+\f0\b\fs28 \cf0 Blackmagic Design DeckLink SDK 10.5.2\
 \
 
 \b0 Please refer to the Blackmagic Design DeckLink SDK documentation for a detailed explanation of the available functionality.\
 \pard\pardeftab720
 
 \b\fs24 \cf0 \
+Changes in Blackmagic DeckLink SDK 10.4.1\
+\
+
+\b0 	- The DeviceList sample has been updated to support more pixel formats.
+\b \
+\
+
+\b0 	- 
+\b Added Types\
+\
+
+\b0 			- added
+\b  BMDLinkConfiguration
+\b0 \
+				- Enumerates the possible SDI link configurations - Single, Dual or Quad.
+\b \
+\
+
+\b0 	- 
+\b Updated Types\
+\pard\pardeftab720
+
+\b0\fs28 \cf0 \
+\pard\pardeftab720
+
+\fs24 \cf0 		- 
+\b BMDDeckLinkAttributeID\
+\
+
+\b0 			- added
+\b  BMDDeckLinkSupportsQuadLinkSDI
+\b0 \
+				- Indicates whether SDI quad-link is supported on this device.\
+\
+		- 
+\b BMDDeckLinkConfigurationID			\
+\
+			\CocoaLigature0 - 
+\b0 added 
+\b \CocoaLigature1 bmdDeckLinkConfigSDIOutputLinkConfiguration
+\b0 \
+				- Configure the SDI output link as either Single, Dual or Quad link.\
+\
+			- removed
+\b  bmdDeckLinkConfigSingleLinkVideoOutput\
+
+\b0 				- Replaced with bmdDeckLinkConfigSDIOutputLinkConfiguration\
+
+\b \
+\
+Changes in Blackmagic DeckLink SDK 10.4\
+
+\b0 \
+	- The SDK framework and sample applications are supported on Microsoft Visual Studio 2013.\
+\
+	- 
+\b Updated Types\
+\pard\pardeftab720
+
+\b0\fs28 \cf0 \
+\pard\pardeftab720
+
+\fs24 \cf0 		- 
+\b BMDDeckLinkAttributeID\
+\
+
+\b0 			- added
+\b  BMDDeckLinkSupportsSMPTELevelAOutput
+\b0 \
+				- Indicates whether SMPTE Level A SDI 3Gbps output is supported by the hardware.
+\b \
+\
+
+\b0 			- added
+\b  BMDDeckLinkSupportsDualLinkSDI\
+
+\b0 				- Indicates whether SDI dual-link is supported on this device. \
+				If SDI dual-link is not supported, only SDI single-link will be supported.\
+\
+			- added
+\b  BMDDeckLinkSupportsIdleOutput\
+
+\b0 				- Indicates whether this device supports idle output. \
+
+\b \
+
+\b0 		- 
+\b BMDDeckLinkConfigurationID			\
+\
+\pard\tx480\pardeftab480\pardirnatural
+\cf0 \CocoaLigature0 					- 
+\b0 added 
+\b \CocoaLigature1 bmdDeckLinkConfigDownConversionOnAllAnalogOutput
+\b0 \
+\pard\pardeftab720
+\cf0 				- Configure down conversion on all analog outputs 
+\b \
+\
+\pard\tx480\pardeftab480\pardirnatural
+\cf0 \CocoaLigature0 					- 
+\b0 added 
+\b \CocoaLigature1 bmdDeckLinkConfigSMPTELevelAOutput
+\b0 \
+\pard\pardeftab720
+\cf0 				- Configure the SDI output to conform to SMPTE level A 3Gbps. \
+				This setting only applies to HD high progressive modes (1080p50, 1080p59.94, 1080p60).\
+ 
+\b \
+\pard\tx480\pardeftab480\pardirnatural
+\cf0 \CocoaLigature0 					- 
+\b0 added 
+\b \CocoaLigature1 bmdDeckLinkConfigCardInformationLabel
+\b0 \
+\pard\pardeftab720
+\cf0 				- Set the label of the device. This can only be set if the device has a persistent ID.\
+				This information will be saved onto the local machine but not onto the device.\
+				This information will also appear in Product Notes section of the Desktop Video control panel.  
+\b \
+\pard\tx480\pardeftab480\pardirnatural
+\cf0 \CocoaLigature0 \
+					- 
+\b0 added 
+\b \CocoaLigature1 bmdDeckLinkConfigCardInformationSerialNumber
+\b0 \
+\pard\pardeftab720
+\cf0 				- Set the serial number of the device. This can only be set if the device has a persistent ID.
+\b \
+
+\b0 				This information will be saved onto the local machine but not onto the device.\
+				This information will also appear in Product Notes section of the Desktop Video control panel.  \
+\pard\tx480\pardeftab480\pardirnatural
+
+\b \cf0 \CocoaLigature0 \
+					- 
+\b0 added 
+\b \CocoaLigature1 bmdDeckLinkConfigCardInformationCompany
+\b0 \
+\pard\pardeftab720
+\cf0 				- Set the device's seller name. This can only be set if the device has a persistent ID.
+\b \
+
+\b0 				This information will be saved onto the local machine but not onto the device.\
+				This information will also appear in Product Notes section of the Desktop Video control panel.  
+\b \
+\
+\pard\tx480\pardeftab480\pardirnatural
+\cf0 \CocoaLigature0 					- 
+\b0 added 
+\b \CocoaLigature1 bmdDeckLinkConfigCardInformationPhone
+\b0 \
+\pard\pardeftab720
+\cf0 				- Set the device's seller phone number. This can only be set if the device has a persistent ID.
+\b \
+
+\b0 				This information will be saved onto the local machine but not onto the device.\
+				This information will also appear in Product Notes section of the Desktop Video control panel.  
+\b \
+\
+\pard\tx480\pardeftab480\pardirnatural
+\cf0 \CocoaLigature0 					- 
+\b0 added 
+\b \CocoaLigature1 bmdDeckLinkConfigCardInformationEmail
+\b0 \
+\pard\pardeftab720
+\cf0 				- Set the device's seller email address. This can only be set if the device has a persistent ID.\
+				This information will be saved onto the local machine but not onto the device.
+\b \
+
+\b0 				This information will also appear in Product Notes section of the Desktop Video control panel.  
+\b \
+\
+\pard\tx480\pardeftab480\pardirnatural
+\cf0 \CocoaLigature0 					- 
+\b0 added 
+\b \CocoaLigature1 bmdDeckLinkConfigCardInformationDate
+\b0 \
+\pard\pardeftab720
+\cf0 				- Set the device's purchase date. This can only be set if the device has a persistent ID.\
+				This information will be saved onto the local machine but not onto the device.
+\b \
+
+\b0 				This information will also appear in Product Notes section of the Desktop Video control panel.  
+\b \
+\
+	
+\b0 	On the Windows platform the following types have been updated for method parameters.
+\b \
+
+\b0 \
+			- changed 
+\b unsigned long to unsigned int\
+
+\b0 			- changed
+\b  long to int\
+\
+	- Updated interfaces
+\b0\fs28 \
+\
+
+\b\fs24 		- IDeckLinkDisplayMode
+\b0 \
+\
+			- updated
+\b  GetName 
+\b0 method\
+				- The format of the video mode names have changed.
+\b \
+\
+Changes in Blackmagic DeckLink SDK 10.3\
+\
+
+\b0 	- 
+\b Added Types
+\b0 \
+\pard\pardeftab720
+
+\fs28 \cf0 \
+\pard\pardeftab720
+
+\fs24 \cf0 		- 
+\b BMDVideoIOSupport\
+	
+\b0 		- An enumeration of capture and playback support\
+
+\b \
+
+\b0 	- 
+\b Updated Types
+\b0 \
+\pard\pardeftab720
+
+\fs28 \cf0 \
+\pard\pardeftab720
+
+\fs24 \cf0 		- 
+\b BMDDeckLinkAttributeID\
+\
+
+\b0 			- added
+\b  BMDDeckLinkMaximumAnalogAudioChannels
+\b0 \
+				- The maximum number of analog audio channels supported by a device
+\fs28 \
+
+\b\fs24 \
+
+\b0 			- added
+\b  BMDDeckLinkAudioOutputConnections\
+
+\b0 				- The audio output connections supported by the hardware \
+\
+			- added
+\b  BMDDeckLinkAudioInputConnections\
+
+\b0 				- The audio input connections supported by the hardware \
+
+\b \
+
+\b0 			- added
+\b  BMDDeckLinkVideoIOSupport\
+
+\b0 				- The capture and playback capability of the device \
+
+\b \
+
+\b0 			- removed
+\b  BMDDeckLinkDeviceIsPlaybackOnly\
+
+\b0 \
+			- removed
+\b  BMDDeckLinkDeviceIsCaptureOnly
+\b0 \
+
+\b \
+
+\b0 		- 
+\b BMDDeckLinkConfigurationID\
+\
+
+\b0 			- renamed
+\b  bmdDeckLinkConfig3GBpsVideoOutput
+\b0  to 
+\b bmdDeckLinkConfigSingleLinkVideoOutput
+\b0 \
+
+\b \
+
+\b0 		- 
+\b BMDAudioConnection\
+\
+
+\b0 			- added
+\b  bmdAudioConnectionAnalogXLR
+\b0 \
+				- Individually selectable analog XLR audio connection
+\fs28 \
+
+\b\fs24 \
+
+\b0 			- added
+\b  bmdAudioConnectionAnalogRCA
+\b0 \
+				- Individually selectable analog RCA audio connection
+\fs28 \
+
+\b\fs24 \
+
+\b0 		- 
+\b BMDTimecodeFlags\
+\
+
+\b0 			- added
+\b  bmdTimecodeFieldMark
+\b0 \
+				- Timecode field mark flag used with frame rates above 30 FPS.
+\fs28 \
+
+\b\fs24 \
+
+\b0 		- 
+\b BMDDisplayMode\
+\pard\tx480\pardeftab480\pardirnatural
+\cf0 \CocoaLigature0 	\
+					- 
+\b0 added 
+\b bmdMode4K2160p50\
+					- 
+\b0 added 
+\b bmdMode4K2160p5994\
+					- 
+\b0 added 
+\b bmdMode4K2160p60\CocoaLigature1 \
+\pard\pardeftab720
+\cf0 \
+
+\b0 		-
+\b  BMDPixelFormat\
+\pard\pardeftab720
+
+\f1\b0 \cf0 \
+\pard\tx480\pardeftab480\pardirnatural
+
+\f0\b \cf0 \CocoaLigature0 					- 
+\b0 added 
+\b \CocoaLigature1 bmdFormat12BitRGB
+\b0 \
+
+\b \CocoaLigature0 					- 
+\b0 added 
+\b \CocoaLigature1 bmdFormat12BitRGBLE
+\b0 \
+\pard\pardeftab720
+
+\b \cf0 \
+\
+Changes in Blackmagic DeckLink SDK 10.1.1\
+\
+
+\b0 	- 
+\b Updated Types
+\b0 \
+\pard\pardeftab720
+
+\fs28 \cf0 \
+\pard\pardeftab720
+
+\fs24 \cf0 		- 
+\b BMDDeckLinkAttributeID\
+\
+
+\b0 			- added
+\b  BMDDeckLinkTopologicalID
+\b0 \
+				- On supported devices, an identifier which persists across reboots
+\fs28 \
+
+\b\fs24 \
+\
+Changes in Blackmagic DeckLink SDK 10.0\
+\
+
+\b0 	- 
+\b Updated Types
+\b0 \
+\pard\pardeftab720
+
+\fs28 \cf0 \
+\pard\pardeftab720
+
+\fs24 \cf0 		- 
+\b BMDDeckLinkAttributeID\
+\pard\pardeftab720
+
+\b0\fs28 \cf0 	\
+\pard\pardeftab720
+
+\fs24 \cf0 			- added
+\b  BMDDeckLinkSupportsFullDuplex
+\b0 \
+				- Whether the device support full duplex operation
+\fs28 \
+
+\b\fs24 \
+
+\b0 			- added
+\b  BMDDeckLinkPersistentID\
+
+\b0 				- Whether the device has a specific 32 bit unique identifier \
+
+\b \
+
+\b0 			- added
+\b  BMDDeckLinkSupportsFullFrameReferenceInputTimingOffset\
+
+\b0 				- Whether genlock offset wider than 511 pixels supported  \
+			\
+		- 
+\b BMDDeckLinkConfigurationID			\
+\
+\pard\tx480\pardeftab480\pardirnatural
+\cf0 \CocoaLigature0 					- 
+\b0 added 
+\b \CocoaLigature1 bmdDeckLinkConfigCapturePassThroughMode
+\b0 \
+\pard\pardeftab720
+\cf0 				- Configure capture passthrough to either direct or clean switch mode 
+\b \
+
+\b0 \
+	- 
+\b New Types
+\b0 \
+\
+		- 
+\b BMDNotifications			\
+\
+\pard\tx480\pardeftab480\pardirnatural
+\cf0 \CocoaLigature0 					- 
+\b0 An enumeration of notification events\CocoaLigature1 \
+\pard\pardeftab720
+\cf0 \
+\
+		- 
+\b BMDDeckLinkCapturePassthroughMode			\
+\
+\pard\tx480\pardeftab480\pardirnatural
+\cf0 \CocoaLigature0 					- 
+\b0 An enumeration which specifies either direct video output to video input mode or clean switching mode\CocoaLigature1 \
+\pard\pardeftab720
+\cf0 		 \
+
+\b 	- Updated interfaces
+\b0\fs28 \
+\
+
+\b\fs24 		- IDeckLinkOutput
+\b0 \
+\
+			- added
+\b  GetFrameCompletionReferenceTimestamp 
+\b0 method\
+\
+				- Time that the frame was output. 
+\fs28 \
+\
+
+\fs24 \
+	-\'a0
+\b New Interfaces
+\b0 \
+\
+
+\b 		-\'a0IDeckLinkDiscovery
+\b0 \
+\
+
+\b 			
+\b0 - new interface to install DeckLink device arrival / removal event callbacks.\
+\
+
+\b 		-\'a0IDeckLinkDeviceNotificationCallback
+\b0 \
+\
+
+\b 			
+\b0 - new interface which provides the callback for DeckLink device arrival / removal events.\
+
+\b \
+		-\'a0IDeckLinkNotification
+\b0 \
+\
+
+\b 			
+\b0 - new interface to install notify event callbacks.\
+
+\b \
+		-\'a0IDeckLinkNotificationCallback
+\b0 \
+\
+
+\b 			
+\b0 - new interface which provides the callback for notification events.\
+
+\b \
+\
+\
+Changes in Blackmagic DeckLink SDK 9.8\
+\
+
+\b0 	- 
+\b Types\
+\
+
+\b0 		-
+\b  BMDPixelFormat\
+\pard\pardeftab720
+
+\f1\b0 \cf0 \
+\pard\tx480\pardeftab480\pardirnatural
+
+\f0\b \cf0 \CocoaLigature0 					- 
+\b0 added 
+\b \CocoaLigature1 bmdFormat10BitRGBXLE
+\b0 \
+
+\b \CocoaLigature0 					- 
+\b0 added 
+\b \CocoaLigature1 bmdFormat10BitRGBX
+\b0 \
+\pard\pardeftab720
+\cf0 			\
+		- 
+\b BMDDeckLinkConfigurationID			\
+\
+\pard\tx480\pardeftab480\pardirnatural
+\cf0 \CocoaLigature0 					- 
+\b0 added 
+\f1\b \CocoaLigature1 bmdDeckLinkConfigUseDedicatedLTCInput
+\f0\b0 \
+\pard\pardeftab720
+
+\b \cf0 \
+				- 
+\b0 Use the timecode from the LTC input rather than from the SDI stream.
+\b \
+\
+
+\b0 		- 
+\b BMDDisplayMode\
+\pard\tx480\pardeftab480\pardirnatural
+\cf0 \CocoaLigature0 					- 
+\b0 added 
+\b bmdMode4kDCI2398\
+					- 
+\b0 added 
+\b bmdMode4kDCI24\
+					- 
+\b0 added 
+\b bmdMode4kDCI25\
+\pard\pardeftab720
+\cf0 \CocoaLigature1 \
+\
 Changes in Blackmagic DeckLink SDK 9.7\
 \
 
@@ -46,8 +608,7 @@ Changes in Blackmagic DeckLink SDK 9.7\
 \b\fs24 \cf0 \CocoaLigature0 					- 
 \b0 added 
 \b bmdDeviceSupportsCapture\
-\pard\tx480\pardeftab480\pardirnatural
-\cf0 					- 
+					- 
 \b0 added 
 \b bmdDeviceSupportsPlayback\
 \
@@ -1284,6 +1845,11 @@ Changes in Blackmagic DeckLink SDK 8.5\
 \
 			- new enumeration for video output flags\
 \
-\pard\pardeftab720\sl276\slmult1\sa200
-\cf0 Updated January 22, 2013.\
-}
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\pardirnatural
+\cf0 \expnd0\expndtw0\kerning0
+Some applications may use third party code under license. For details please refer to the included "Third Party Licenses.rtf" document.\
+
+\fs18 \
+\'a9 2015 Blackmagic Design Pty. Ltd. All rights reserved. Blackmagic Design, Blackmagic, DeckLink, Multibridge, HDLink, Videohub, and "Leading the creative video revolution" are trademarks of Blackmagic Design Pty. Ltd., registered in the U.S.A and other countries.\
+\
+Updated November 25, 2015.}

@@ -31,6 +31,9 @@
 #include "DecoderMF.h"
 #include "PreviewWindow.h"
 
+#define WM_PREVIEWSTART	(WM_APP + 1)
+#define WM_PREVIEWSTOP	(WM_APP + 2)
+
 // CStreamingPreviewDlg dialog
 class CStreamingPreviewDlg : public CDialog,
 	public IBMDStreamingDeviceNotificationCallback,
@@ -60,7 +63,6 @@ protected:
 	IBMDStreamingDiscovery*			m_streamingDiscovery;
 	IDeckLink*						m_streamingDevice;
 	IBMDStreamingDeviceInput*		m_streamingDeviceInput;
-	bool							m_playing;
 	BMDStreamingDeviceMode			m_deviceMode;
 	BMDVideoConnection				m_inputConnector;
 	BMDDisplayMode					m_inputMode;
@@ -80,8 +82,8 @@ public:
 	afx_msg void					OnInputModeChanged();
 
 private:
-	void							StartPreview();
-	void							StopPreview();
+	afx_msg LRESULT 				StartPreview(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT 				StopPreview(WPARAM wParam, LPARAM lParam);
 	void							UpdateUIForNewDevice();
 	void							UpdateUIForNoDevice();
 	void							UpdateUIForModeChanges();

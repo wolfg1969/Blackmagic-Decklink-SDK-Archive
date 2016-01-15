@@ -29,8 +29,18 @@ SDK_PATH=../../include
 CFLAGS=-Wno-multichar -I $(SDK_PATH) -fno-rtti
 LDFLAGS=-lm -ldl -lpthread
 
-TestPattern: TestPattern.h TestPattern.cpp $(SDK_PATH)/DeckLinkAPIDispatch.cpp
-	$(CC) -o TestPattern TestPattern.cpp $(SDK_PATH)/DeckLinkAPIDispatch.cpp $(CFLAGS) $(LDFLAGS)
+HEADERS= \
+	Config.h \
+	TestPattern.h \
+	VideoFrame3D.h
+
+SRCS= \
+	Config.cpp \
+	TestPattern.cpp \
+	VideoFrame3D.cpp
+
+TestPattern: $(SRCS) $(HEADERS) $(SDK_PATH)/DeckLinkAPIDispatch.cpp
+	$(CC) -o TestPattern $(SRCS) $(SDK_PATH)/DeckLinkAPIDispatch.cpp $(CFLAGS) $(LDFLAGS)
 
 clean:
 	rm -f TestPattern

@@ -285,9 +285,14 @@ bool DecoderMF::DoProcessInputNAL(IBMDStreamingH264NALPacket* nalPacket)
 		goto bail;
 
 	// Now parse it to the decoder
-	hr = m_h264Decoder->ProcessInput(0, newSample, 0);
-	if (FAILED(hr))
-		goto bail;
+	for (;;)
+	{
+		hr = m_h264Decoder->ProcessInput(0, newSample, 0);
+		if (hr == S_OK)
+			break;
+		if (hr != MF_E_NOTACCEPTING || DoProcessOutput() == false)
+			goto bail;
+	}
 
 	ret = true;
 

@@ -118,7 +118,7 @@ void	CDeckLinkGLWidget::resizeGL (int width, int height)
 	mutex.unlock();
 }
 
-HRESULT		CDeckLinkGLWidget::QueryInterface (REFIID iid, LPVOID *ppv)
+HRESULT		CDeckLinkGLWidget::QueryInterface (REFIID, LPVOID *ppv)
 {
 	*ppv = NULL;
 	return E_NOINTERFACE;
@@ -271,7 +271,7 @@ bail:
 		deckLinkIterator->Release();
 }
 
-void SignalGenerator::closeEvent(QCloseEvent *event)
+void SignalGenerator::closeEvent(QCloseEvent *)
 {
 	if (running)
 		stopRunning();
@@ -368,7 +368,7 @@ void SignalGenerator::startRunning()
 	
 	// Begin video preroll by scheduling a second of frames in hardware
 	totalFramesScheduled = 0;
-	for (int i = 0; i < framesPerSecond; i++)
+	for (unsigned int i = 0; i < framesPerSecond; i++)
 		scheduleNextFrame(true);
 	
 	// Begin audio preroll.  This will begin calling our audio callback, which will start the DeckLink output stream.
@@ -487,7 +487,7 @@ PlaybackDelegate::PlaybackDelegate (SignalGenerator* owner, IDeckLinkOutput* dec
 	mDeckLinkOutput = deckLinkOutput;
 }
 
-HRESULT		PlaybackDelegate::ScheduledFrameCompleted (IDeckLinkVideoFrame* completedFrame, BMDOutputFrameCompletionResult result)
+HRESULT		PlaybackDelegate::ScheduledFrameCompleted (IDeckLinkVideoFrame*, BMDOutputFrameCompletionResult)
 {
 	// When a video frame has been 
 	mController->scheduleNextFrame(false);
@@ -524,12 +524,12 @@ void	FillSine (void* audioBuffer, uint32_t samplesToWrite, uint32_t channels, ui
 		int16_t*		nextBuffer;
 		
 		nextBuffer = (int16_t*)audioBuffer;
-		for (int32_t i = 0; i < samplesToWrite; i++)
+		for (uint32_t i = 0; i < samplesToWrite; i++)
 		{
 			int16_t		sample;
 			
 			sample = (int16_t)(24576.0 * sin((i * 2.0 * M_PI) / 48.0));
-			for (int32_t ch = 0; ch < channels; ch++)
+			for (uint32_t ch = 0; ch < channels; ch++)
 				*(nextBuffer++) = sample;
 		}
 	}
@@ -538,12 +538,12 @@ void	FillSine (void* audioBuffer, uint32_t samplesToWrite, uint32_t channels, ui
 		int32_t*		nextBuffer;
 		
 		nextBuffer = (int32_t*)audioBuffer;
-		for (int32_t i = 0; i < samplesToWrite; i++)
+		for (uint32_t i = 0; i < samplesToWrite; i++)
 		{
 			int32_t		sample;
 			
 			sample = (int32_t)(1610612736.0 * sin((i * 2.0 * M_PI) / 48.0));
-			for (int32_t ch = 0; ch < channels; ch++)
+			for (uint32_t ch = 0; ch < channels; ch++)
 				*(nextBuffer++) = sample;
 		}
 	}

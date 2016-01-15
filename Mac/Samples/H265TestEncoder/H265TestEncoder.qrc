@@ -1,0 +1,20 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="StyleSheet">H265TestEncoder.qss</file>
+        <file alias="gotham-xlight">Fonts/gotham-xlight.otf</file>
+        <file alias="Device">Images/@1x/UltraStudio4K_12G.png</file>
+        <file alias="Record_default">Images/@1x/Record_default.png</file>
+        <file alias="Record_stop">Images/@1x/Record_stop.png</file>
+        <file alias="slider_handle">Images/@1x/slider_handle.png</file>
+        <file alias="slider_handle_focus">Images/@1x/slider_handle_focus.png</file>
+        <file alias="OpenSans-Light">Fonts/OpenSans-Light.ttf</file>
+        <file alias="OpenSans-Semibold">Fonts/OpenSans-Semibold.ttf</file>
+        <file alias="Logo">Images/@1x/logo.png</file>
+        <file alias="Logo@2x">Images/@2x/logo@2x.png</file>
+        <file alias="Record_default@2x">Images/@2x/Record_default@2x.png</file>
+        <file alias="Record_stop@2x">Images/@2x/Record_stop@2x.png</file>
+        <file alias="slider_handle_focus@2x">Images/@2x/slider_handle_focus@2x.png</file>
+        <file alias="slider_handle@2x">Images/@2x/slider_handle@2x.png</file>
+        <file alias="Device@2x">Images/@2x/UltraStudio4K_12G@2x.png</file>
+    </qresource>
+</RCC>

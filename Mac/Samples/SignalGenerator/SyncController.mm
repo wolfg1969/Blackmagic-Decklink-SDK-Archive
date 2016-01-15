@@ -29,10 +29,14 @@
 //  Signal Generator
 //
 
-#import "SyncController.h"
+#import <CoreFoundation/CFString.h>
 
+#import "SyncController.h"
+#import "SignalGenerator3DVideoFrame.h"
 
 const uint32_t		kAudioWaterlevel = 48000;
+
+#define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))
 
 // SD 75% Colour Bars
 static uint32_t gSD75pcColourBars[8] =
@@ -50,11 +54,199 @@ static uint32_t gHD75pcColourBars[8] =
 
 @implementation SyncController
 
+- (void) refreshDisplayModeMenu
+{
+	// Populate the display mode menu with a list of display modes supported by the installed DeckLink card
+	IDeckLinkDisplayModeIterator*		displayModeIterator;
+	IDeckLinkDisplayMode*				deckLinkDisplayMode;
+	BMDPixelFormat						pixelFormat;
+	int									i;
+
+	pixelFormat = [[pixelFormatPopup selectedItem] tag];
+
+	for (i = 0; i < [videoFormatPopup numberOfItems]; i++)
+	{
+		deckLinkDisplayMode = (IDeckLinkDisplayMode*)[[videoFormatPopup itemAtIndex:i] tag];
+		if (! deckLinkDisplayMode)
+			continue;
+		deckLinkDisplayMode->Release();
+	}
+
+	[videoFormatPopup removeAllItems];
+	if (deckLinkOutput->GetDisplayModeIterator(&displayModeIterator) != S_OK)
+		return;
+
+	while (displayModeIterator->Next(&deckLinkDisplayMode) == S_OK)
+	{
+		CFStringRef				modeName;
+		CFStringRef				modeName3D;
+		BMDDisplayModeSupport	displayModeSupport;
+		BMDVideoOutputFlags		videoOutputFlags;
+		HRESULT					hr;
+
+		if (deckLinkDisplayMode->GetName(&modeName) != S_OK)
+			continue;
+
+		// Add this item to the video format poup menu
+		[videoFormatPopup addItemWithTitle:(NSString*)modeName];
+
+		// Save the IDeckLinkDisplayMode in the menu item's tag
+		[[videoFormatPopup lastItem] setTag:(NSInteger)deckLinkDisplayMode];
+
+		videoOutputFlags = deckLinkDisplayMode->GetFlags() | bmdVideoOutputDualStream3D;
+
+		hr = deckLinkOutput->DoesSupportVideoMode(deckLinkDisplayMode->GetDisplayMode(), pixelFormat, videoOutputFlags, &displayModeSupport, NULL);
+		if (hr != S_OK || displayModeSupport == bmdDisplayModeNotSupported)
+		{
+			CFRelease(modeName);
+			continue;
+		}
+
+		modeName3D = CFStringCreateWithFormat(kCFAllocatorDefault, NULL, CFSTR("%@ 3D"), modeName);
+		[videoFormatPopup addItemWithTitle:(NSString*)modeName3D];
+
+		// Save the IDeckLinkDisplayMode in the menu item's tag
+		deckLinkDisplayMode->AddRef();
+		[[videoFormatPopup lastItem] setTag:(NSInteger)deckLinkDisplayMode];
+
+		CFRelease(modeName3D);
+		CFRelease(modeName);
+	}
+
+	displayModeIterator->Release();
+
+	if ([videoFormatPopup numberOfItems] == 0)
+		[startButton setEnabled:false];
+	else
+		[startButton setEnabled:true];
+}
+
+- (SignalGenerator3DVideoFrame*) CreateBlackFrame
+{
+	IDeckLinkMutableVideoFrame*		referenceBlack = NULL;
+	IDeckLinkMutableVideoFrame*		scheduleBlack = NULL;
+	HRESULT							hr;
+	BMDPixelFormat					pixelFormat;
+	int								bytesPerPixel;
+	IDeckLinkVideoConversion*		frameConverter = NULL;
+	SignalGenerator3DVideoFrame*	ret = NULL;
+
+	pixelFormat = [[pixelFormatPopup selectedItem] tag];
+	bytesPerPixel = GetBytesPerPixel(pixelFormat);
+
+	hr = deckLinkOutput->CreateVideoFrame(frameWidth, frameHeight, frameWidth*bytesPerPixel, pixelFormat, bmdFrameFlagDefault, &scheduleBlack);
+	if (hr != S_OK)
+		goto bail;
+
+	// 8-bit YUV pixels can be filled directly without conversion
+	if (pixelFormat == bmdFormat8BitYUV)
+	{
+		FillBlack(scheduleBlack);
+	}
+	else
+	{
+		// If the pixel formats are different create and fill an 8 bit YUV reference frame
+		hr = deckLinkOutput->CreateVideoFrame(frameWidth, frameHeight, frameWidth*2, bmdFormat8BitYUV, bmdFrameFlagDefault, &referenceBlack);
+		if (hr != S_OK)
+			goto bail;
+		FillBlack(referenceBlack);
+
+		frameConverter = CreateVideoConversionInstance();
+
+		hr = frameConverter->ConvertFrame(referenceBlack, scheduleBlack);
+		if (hr != S_OK)
+			goto bail;
+	}
+
+	ret = new SignalGenerator3DVideoFrame(scheduleBlack);
+
+bail:
+	if (referenceBlack)
+		referenceBlack->Release();
+	if (scheduleBlack)
+		scheduleBlack->Release();
+	if (frameConverter)
+		frameConverter->Release();
+
+	return ret;
+}
+
+- (SignalGenerator3DVideoFrame*) CreateBarsFrame
+{
+	IDeckLinkMutableVideoFrame*		referenceBarsLeft = NULL;
+	IDeckLinkMutableVideoFrame*		referenceBarsRight = NULL;
+	IDeckLinkMutableVideoFrame*		scheduleBarsLeft = NULL;
+	IDeckLinkMutableVideoFrame*		scheduleBarsRight = NULL;
+	HRESULT							hr;
+	BMDPixelFormat					pixelFormat;
+	int								bytesPerPixel;
+	IDeckLinkVideoConversion*		frameConverter = NULL;
+	SignalGenerator3DVideoFrame*	ret = NULL;
+
+	pixelFormat = [[pixelFormatPopup selectedItem] tag];
+	bytesPerPixel = GetBytesPerPixel(pixelFormat);
+
+	// Request a left and right frame from the device
+	hr = deckLinkOutput->CreateVideoFrame(frameWidth, frameHeight, frameWidth*bytesPerPixel, pixelFormat, bmdFrameFlagDefault, &scheduleBarsLeft);
+	if (hr != S_OK)
+		goto bail;
+
+	hr = deckLinkOutput->CreateVideoFrame(frameWidth, frameHeight, frameWidth*bytesPerPixel, pixelFormat, bmdFrameFlagDefault, &scheduleBarsRight);
+	if (hr != S_OK)
+		goto bail;
+
+	// 8-bit YUV pixels can be filled directly without conversion
+	if (pixelFormat == bmdFormat8BitYUV)
+	{
+		FillColourBars(scheduleBarsLeft, false);
+		FillColourBars(scheduleBarsRight, true);
+	}
+	else
+	{
+		// If the pixel formats are different create and fill an 8 bit YUV reference frame
+		hr = deckLinkOutput->CreateVideoFrame(frameWidth, frameHeight, frameWidth*2, bmdFormat8BitYUV, bmdFrameFlagDefault, &referenceBarsLeft);
+		if (hr != S_OK)
+			goto bail;
+		hr = deckLinkOutput->CreateVideoFrame(frameWidth, frameHeight, frameWidth*2, bmdFormat8BitYUV, bmdFrameFlagDefault, &referenceBarsRight);
+		if (hr != S_OK)
+			goto bail;
+
+		FillColourBars(referenceBarsLeft, false);
+		FillColourBars(referenceBarsRight, true);
+
+		frameConverter = CreateVideoConversionInstance();
+
+		hr = frameConverter->ConvertFrame(referenceBarsLeft, scheduleBarsLeft);
+		if (hr != S_OK)
+			goto bail;
+
+		hr = frameConverter->ConvertFrame(referenceBarsRight, scheduleBarsRight);
+		if (hr != S_OK)
+			goto bail;
+	}
+
+	ret = new SignalGenerator3DVideoFrame(scheduleBarsLeft, scheduleBarsRight);
+
+bail:
+	if (referenceBarsLeft)
+		referenceBarsLeft->Release();
+	if (referenceBarsRight)
+		referenceBarsRight->Release();
+	if (scheduleBarsLeft)
+		scheduleBarsLeft->Release();
+	if (scheduleBarsRight)
+		scheduleBarsRight->Release();
+	if (frameConverter)
+		frameConverter->Release();
+
+	return ret;
+}
+
 - (void)applicationDidFinishLaunching:(NSNotification*)notification
 {
 	IDeckLinkIterator*			deckLinkIterator = NULL;
 	BOOL						success = NO;
-	
+
 	// **** Find a DeckLink instance and obtain video output interface
 	deckLinkIterator = CreateDeckLinkIteratorInstance();
 	if (deckLinkIterator == NULL)
@@ -82,34 +274,12 @@ static uint32_t gHD75pcColourBars[8] =
 	deckLinkOutput->SetScheduledFrameCompletionCallback(playerDelegate);
 	deckLinkOutput->SetAudioCallback(playerDelegate);
 	
-	
-	// Populate the display mode menu with a list of display modes supported by the installed DeckLink card
-	IDeckLinkDisplayModeIterator*		displayModeIterator;
-	IDeckLinkDisplayMode*				deckLinkDisplayMode;
-	
-	[videoFormatPopup removeAllItems];
-	if (deckLinkOutput->GetDisplayModeIterator(&displayModeIterator) != S_OK)
-		goto bail;
-	while (displayModeIterator->Next(&deckLinkDisplayMode) == S_OK)
-	{
-		CFStringRef		modeName;
-		
-		if (deckLinkDisplayMode->GetName(&modeName) == S_OK)
-		{
-			// Add this item to the video format poup menu
-			[videoFormatPopup addItemWithTitle:(NSString*)modeName];
-			// Save the IDeckLinkDisplayMode in the menu item's tag
-			[[videoFormatPopup itemAtIndex:[videoFormatPopup numberOfItems]-1]  setTag:(NSInteger)deckLinkDisplayMode];
-			CFRelease(modeName);
-		}
-	}
-	displayModeIterator->Release();
-	
-	
+	[self refreshDisplayModeMenu];
+
 	deckLinkOutput->SetScreenPreviewCallback(CreateCocoaScreenPreview(previewView));
 	
 	success = YES;
-	
+
 bail:
 	if (success == NO)
 	{
@@ -142,8 +312,8 @@ bail:
 	[audioChannelPopup setEnabled:enable];
 	[audioSampleDepthPopup setEnabled:enable];
 	[videoFormatPopup setEnabled:enable];
+	[pixelFormatPopup setEnabled:enable];
 }
-
 
 - (IBAction)toggleStart:(id)sender
 {
@@ -153,33 +323,47 @@ bail:
 		[self stopRunning];
 }
 
+- (IBAction)pixelFormatChange:(id)sender
+{
+	[self refreshDisplayModeMenu];
+}
+
 - (void)startRunning
 {
 	IDeckLinkDisplayMode*	videoDisplayMode = NULL;
-	
+	BMDVideoOutputFlags		videoOutputFlags;
+	NSMenuItem*				videoDisplayItem;
+
+	videoOutputFlags = bmdVideoOutputFlagDefault;
+
+	// If the mode title contains "3D" then enable the video in 3D mode
+	videoDisplayItem = [videoFormatPopup selectedItem];
+	if ([[videoDisplayItem title] hasSuffix:(NSString*)CFSTR("3D")])
+		videoOutputFlags |= bmdVideoOutputDualStream3D;
+
 	// Determine the audio and video properties for the output stream
 	outputSignal = (OutputSignal)[outputSignalPopup indexOfSelectedItem];
 	audioChannelCount = [[audioChannelPopup selectedItem] tag];
 	audioSampleDepth = [[audioSampleDepthPopup selectedItem] tag];
 	audioSampleRate = bmdAudioSampleRate48kHz;
-	//
+
 	// - Extract the IDeckLinkDisplayMode from the display mode popup menu (stashed in the item's tag)
 	videoDisplayMode = (IDeckLinkDisplayMode*)[[videoFormatPopup selectedItem] tag];
 	frameWidth = videoDisplayMode->GetWidth();
 	frameHeight = videoDisplayMode->GetHeight();
+
 	videoDisplayMode->GetFrameRate(&frameDuration, &frameTimescale);
 	// Calculate the number of frames per second, rounded up to the nearest integer.  For example, for NTSC (29.97 FPS), framesPerSecond == 30.
 	framesPerSecond = (frameTimescale + (frameDuration-1))  /  frameDuration;
-	
+
 	// Set the video output mode
-	if (deckLinkOutput->EnableVideoOutput(videoDisplayMode->GetDisplayMode(), bmdVideoOutputFlagDefault) != S_OK)
+	if (deckLinkOutput->EnableVideoOutput(videoDisplayMode->GetDisplayMode(), videoOutputFlags) != S_OK)
 		goto bail;
 	
 	// Set the audio output mode
 	if (deckLinkOutput->EnableAudioOutput(bmdAudioSampleRate48kHz, audioSampleDepth, audioChannelCount, bmdAudioOutputStreamTimestamped) != S_OK)
 		goto bail;
-	
-	
+
 	// Generate one second of audio tone
 	audioSamplesPerFrame = ((audioSampleRate * frameDuration) / frameTimescale);
 	audioBufferSampleLength = (framesPerSecond * audioSampleRate * frameDuration) / frameTimescale;
@@ -187,19 +371,15 @@ bail:
 	if (audioBuffer == NULL)
 		goto bail;
 	FillSine(audioBuffer, audioBufferSampleLength, audioChannelCount, audioSampleDepth);
-	
-	// Generate a frame of black
-	if (deckLinkOutput->CreateVideoFrame(frameWidth, frameHeight, frameWidth*2, bmdFormat8BitYUV, bmdFrameFlagDefault, &videoFrameBlack) != S_OK)
+
+	videoFrameBlack = [self CreateBlackFrame];
+	if (! videoFrameBlack)
 		goto bail;
-	FillBlack(videoFrameBlack);
-	
-	// Generate a frame of colour bars
-	if (deckLinkOutput->CreateVideoFrame(frameWidth, frameHeight, frameWidth*2, bmdFormat8BitYUV, bmdFrameFlagDefault, &videoFrameBars) != S_OK)
+
+	videoFrameBars = [self CreateBarsFrame];
+	if (! videoFrameBars)
 		goto bail;
-	FillColourBars(videoFrameBars);
-	
-	
-	
+
 	// Begin video preroll by scheduling a second of frames in hardware
 	totalFramesScheduled = 0;
 	for (int i = 0; i < framesPerSecond; i++)
@@ -209,7 +389,7 @@ bail:
 	totalAudioSecondsScheduled = 0;
 	if (deckLinkOutput->BeginAudioPreroll() != S_OK)
 		goto bail;
-	
+
 	// Success; update the UI
 	running = YES;
 	[startButton setTitle:@"Stop"];
@@ -223,7 +403,6 @@ bail:
 	[self stopRunning];
 }
 
-
 - (void)stopRunning
 {
 	// Stop the audio and video output streams immediately
@@ -231,26 +410,25 @@ bail:
 	//
 	deckLinkOutput->DisableAudioOutput();
 	deckLinkOutput->DisableVideoOutput();
-	
+
 	if (videoFrameBlack != NULL)
 		videoFrameBlack->Release();
 	videoFrameBlack = NULL;
-	
+
 	if (videoFrameBars != NULL)
 		videoFrameBars->Release();
 	videoFrameBars = NULL;
-	
+
 	if (audioBuffer != NULL)
 		free(audioBuffer);
 	audioBuffer = NULL;
-	
+
 	// Success; update the UI
 	running = NO;
 	[startButton setTitle:@"Start"];
 	// Re-enable the user interface when stopped
 	[self enableInterface:YES];
 }
-
 
 - (void)scheduleNextFrame:(BOOL)prerolling
 {
@@ -291,7 +469,7 @@ bail:
 				return;
 		}
 	}
-	
+		
 	totalFramesScheduled += 1;
 }
 
@@ -388,13 +566,14 @@ void	FillSine (void* audioBuffer, uint32_t samplesToWrite, uint32_t channels, ui
 	}
 }
 
-void	FillColourBars (IDeckLinkVideoFrame* theFrame)
+void	FillColourBars (IDeckLinkVideoFrame* theFrame, bool reversed)
 {
 	uint32_t*		nextWord;
 	uint32_t		width;
 	uint32_t		height;
 	uint32_t*		bars;
-	
+	uint8_t			numBars;
+
 	theFrame->GetBytes((void**)&nextWord);
 	width = theFrame->GetWidth();
 	height = theFrame->GetHeight();
@@ -402,17 +581,24 @@ void	FillColourBars (IDeckLinkVideoFrame* theFrame)
 	if (width > 720)
 	{
 		bars = gHD75pcColourBars;
+		numBars = ARRAY_SIZE(gHD75pcColourBars);
 	}
 	else
 	{
 		bars = gSD75pcColourBars;
+		numBars = ARRAY_SIZE(gSD75pcColourBars);
 	}
 
 	for (uint32_t y = 0; y < height; y++)
 	{
 	    for (uint32_t x = 0; x < width; x+=2)
 		{
-				*(nextWord++) = bars[(x * 8) / width];
+			int pos = x * numBars / width;
+			
+			if (reversed)
+				pos = numBars - pos - 1;
+
+			*(nextWord++) = bars[pos];
 		}
 	}
 }
@@ -432,4 +618,23 @@ void	FillBlack (IDeckLinkVideoFrame* theFrame)
 	
 	while (wordsRemaining-- > 0)
 		*(nextWord++) = 0x10801080;
+}
+
+int		GetBytesPerPixel (BMDPixelFormat pixelFormat)
+{
+	int bytesPerPixel = 2;
+	
+	switch(pixelFormat)
+	{
+		case bmdFormat8BitYUV:
+			bytesPerPixel = 2;
+			break;
+		case bmdFormat8BitARGB:
+		case bmdFormat10BitYUV:
+		case bmdFormat10BitRGB:
+			bytesPerPixel = 4;
+			break;
+	}
+	
+	return bytesPerPixel;
 }

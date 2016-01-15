@@ -70,26 +70,26 @@ interface IDeckLinkVideoInputFrame_v7_3;
     HRESULT DisableVideoOutput(void);
 
     HRESULT SetVideoOutputFrameMemoryAllocator([in] IDeckLinkMemoryAllocator *theAllocator);
-    HRESULT CreateVideoFrame(long width, long height, long rowBytes, BMDPixelFormat pixelFormat, BMDFrameFlags flags, [out] IDeckLinkMutableVideoFrame_v7_6 **outFrame);
+    HRESULT CreateVideoFrame(int width, int height, int rowBytes, BMDPixelFormat pixelFormat, BMDFrameFlags flags, [out] IDeckLinkMutableVideoFrame_v7_6 **outFrame);
     HRESULT CreateAncillaryData(BMDPixelFormat pixelFormat, [out] IDeckLinkVideoFrameAncillary **outBuffer);
 
     HRESULT DisplayVideoFrameSync([in] IDeckLinkVideoFrame_v7_6 *theFrame);
     HRESULT ScheduleVideoFrame([in] IDeckLinkVideoFrame_v7_6 *theFrame, BMDTimeValue displayTime, BMDTimeValue displayDuration, BMDTimeScale timeScale);
     HRESULT SetScheduledFrameCompletionCallback([in] IDeckLinkVideoOutputCallback *theCallback);
-    HRESULT GetBufferedVideoFrameCount([out] unsigned long *bufferedFrameCount);
+    HRESULT GetBufferedVideoFrameCount([out] unsigned int *bufferedFrameCount);
 
     /* Audio Output */
 
-    HRESULT EnableAudioOutput(BMDAudioSampleRate sampleRate, BMDAudioSampleType sampleType, unsigned long channelCount, BMDAudioOutputStreamType streamType);
+    HRESULT EnableAudioOutput(BMDAudioSampleRate sampleRate, BMDAudioSampleType sampleType, unsigned int channelCount, BMDAudioOutputStreamType streamType);
     HRESULT DisableAudioOutput(void);
 
-    HRESULT WriteAudioSamplesSync([in] void *buffer, unsigned long sampleFrameCount, [out] unsigned long *sampleFramesWritten);
+    HRESULT WriteAudioSamplesSync([in] void *buffer, unsigned int sampleFrameCount, [out] unsigned int *sampleFramesWritten);
 
     HRESULT BeginAudioPreroll(void);
     HRESULT EndAudioPreroll(void);
-    HRESULT ScheduleAudioSamples([in] void *buffer, unsigned long sampleFrameCount, BMDTimeValue streamTime, BMDTimeScale timeScale, [out] unsigned long *sampleFramesWritten);
+    HRESULT ScheduleAudioSamples([in] void *buffer, unsigned int sampleFrameCount, BMDTimeValue streamTime, BMDTimeScale timeScale, [out] unsigned int *sampleFramesWritten);
 
-    HRESULT GetBufferedAudioSampleFrameCount([out] unsigned long *bufferedSampleFrameCount);
+    HRESULT GetBufferedAudioSampleFrameCount([out] unsigned int *bufferedSampleFrameCount);
     HRESULT FlushBufferedAudioSamples(void);
 
     HRESULT SetAudioCallback([in] IDeckLinkAudioOutputCallback *theCallback);
@@ -121,13 +121,13 @@ interface IDeckLinkVideoInputFrame_v7_3;
 
     HRESULT EnableVideoInput(BMDDisplayMode displayMode, BMDPixelFormat pixelFormat, BMDVideoInputFlags flags);
     HRESULT DisableVideoInput(void);
-    HRESULT GetAvailableVideoFrameCount([out] unsigned long *availableFrameCount);
+    HRESULT GetAvailableVideoFrameCount([out] unsigned int *availableFrameCount);
 
     /* Audio Input */
 
-    HRESULT EnableAudioInput(BMDAudioSampleRate sampleRate, BMDAudioSampleType sampleType, unsigned long channelCount);
+    HRESULT EnableAudioInput(BMDAudioSampleRate sampleRate, BMDAudioSampleType sampleType, unsigned int channelCount);
     HRESULT DisableAudioInput(void);
-    HRESULT GetAvailableAudioSampleFrameCount([out] unsigned long *availableSampleFrameCount);
+    HRESULT GetAvailableAudioSampleFrameCount([out] unsigned int *availableSampleFrameCount);
 
     /* Input Control */
 

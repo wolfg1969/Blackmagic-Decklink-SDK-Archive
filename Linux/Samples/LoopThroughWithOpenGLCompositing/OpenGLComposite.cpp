@@ -27,6 +27,7 @@
 
 #include "OpenGLComposite.h"
 #include "GLExtensions.h"
+#include <GL/glu.h>
 
 OpenGLComposite::OpenGLComposite(QWidget *parent) :
 	QGLWidget(parent), mParent(parent),

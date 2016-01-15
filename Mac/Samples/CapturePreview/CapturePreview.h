@@ -29,8 +29,10 @@
 #include "DeckLinkAPI.h"
 #include <vector>
 
-// Forward declaration
-class DeckLinkController;
+// Forward declarations
+class DeckLinkDeviceDiscovery;
+class DeckLinkDevice;
+
 typedef struct {
 	// VITC timecodes and user bits for field 1 & 2
 	NSString*	vitcF1Timecode;
@@ -49,7 +51,11 @@ typedef struct {
 
 @interface CapturePreviewAppDelegate : NSObject <NSApplicationDelegate> {
     NSWindow*						window;
-	DeckLinkController*				deckLinkController;
+    
+	DeckLinkDeviceDiscovery*		deckLinkDiscovery;
+    IDeckLinkScreenPreviewCallback*	screenPreviewCallback;
+    DeckLinkDevice*                 selectedDevice;
+    
 	// The following members store values & labels for the 8 pieces of ancillary data (VITC & RP188 F1/F2 timecodes & user bits) 
 	NSMutableArray*					ancillaryDataValues;
 	NSArray*						ancillaryDataTypes; 
@@ -67,7 +73,7 @@ typedef struct {
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification;
-- (void)dealloc;
+- (void)applicationWillTerminate:(NSNotification *)notification;
 
 - (void)showErrorMessage:(NSString*)message title:(NSString*)title;
 
@@ -79,9 +85,13 @@ typedef struct {
 - (void)startCapture;
 - (void)stopCapture;
 
+- (void)addDevice:(IDeckLink*)deckLink;
+- (void)removeDevice:(IDeckLink*)deckLink;
+
 - (void)updateInputSourceState:(BOOL)state;
 - (void)selectDetectedVideoModeWithIndex:(UInt32)newVideoModeIndex;
-- (void)updateAncillaryData:(AncillaryDataStruct*) latestAncillaryDataValues;
+- (void)setAncillaryData:(AncillaryDataStruct*) latestAncillaryDataValues;
+- (void)reloadAncillaryTable;
 
 - (BOOL)shouldRestartCaptureWithNewVideoMode;
 

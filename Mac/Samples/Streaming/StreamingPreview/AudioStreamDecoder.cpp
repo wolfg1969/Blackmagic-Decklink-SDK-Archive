@@ -197,6 +197,7 @@ void AudioStreamDecoder::QueueRunningCallback(AudioQueueRef queue, AudioQueuePro
 	BAIL_IF(!mStarted, "Queue not started\n");
 
 	UInt32 running, size;
+	size = sizeof(running);
 	err = AudioQueueGetProperty(mQueue, kAudioQueueProperty_IsRunning, &running, &size);
 	BAIL_IF(err, "AudioQueueGetProperty returned %ld\n", err);
 

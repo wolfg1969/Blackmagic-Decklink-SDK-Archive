@@ -17,7 +17,7 @@ using namespace std;
 
 #include <sstream>
 
-#include "..\..\..\include\DecklinkInterface.h"	// For Decklink specific media type definitions.
+#include "DecklinkInterface.h"	// For Decklink specific media type definitions.
 
 BridgeSink::BridgeSink(BridgeController* pController)
 : m_tFirst(0),

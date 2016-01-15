@@ -3,18 +3,18 @@
 /* this ALWAYS GENERATED file contains the definitions for the interfaces */
 
 
- /* File created by MIDL compiler version 7.00.0500 */
-/* at Tue Jan 22 13:17:16 2013
+ /* File created by MIDL compiler version 8.00.0603 */
+/* at Tue Nov 24 09:20:38 2015
  */
-/* Compiler settings for .\DecklinkFilters.idl:
-    Oicf, W1, Zp8, env=Win32 (32b run)
+/* Compiler settings for DecklinkFilters.idl:
+    Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 8.00.0603 
     protocol : dce , ms_ext, c_ext, robust
     error checks: allocation ref bounds_check enum stub_data 
     VC __declspec() decoration level: 
          __declspec(uuid()), __declspec(selectany), __declspec(novtable)
          DECLSPEC_UUID(), MIDL_INTERFACE()
 */
-//@@MIDL_FILE_HEADING(  )
+/* @@MIDL_FILE_HEADING(  ) */
 
 #pragma warning( disable: 4049 )  /* more than 64k source lines */
 
@@ -164,18 +164,21 @@ typedef struct DecklinkToneSource DecklinkToneSource;
 #ifndef __IDecklinkPushSource_FWD_DEFINED__
 #define __IDecklinkPushSource_FWD_DEFINED__
 typedef interface IDecklinkPushSource IDecklinkPushSource;
+
 #endif 	/* __IDecklinkPushSource_FWD_DEFINED__ */
 
 
 #ifndef __IDecklinkPushSource2_FWD_DEFINED__
 #define __IDecklinkPushSource2_FWD_DEFINED__
 typedef interface IDecklinkPushSource2 IDecklinkPushSource2;
+
 #endif 	/* __IDecklinkPushSource2_FWD_DEFINED__ */
 
 
 #ifndef __IDecklinkPushSource3_FWD_DEFINED__
 #define __IDecklinkPushSource3_FWD_DEFINED__
 typedef interface IDecklinkPushSource3 IDecklinkPushSource3;
+
 #endif 	/* __IDecklinkPushSource3_FWD_DEFINED__ */
 
 
@@ -302,6 +305,7 @@ EXTERN_C const IID IID_IDecklinkPushSource;
         
     };
     
+    
 #else 	/* C style interface */
 
     typedef struct IDecklinkPushSourceVtbl
@@ -311,8 +315,8 @@ EXTERN_C const IID IID_IDecklinkPushSource;
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             IDecklinkPushSource * This,
             /* [in] */ REFIID riid,
-            /* [iid_is][out] */ 
-            __RPC__deref_out  void **ppvObject);
+            /* [annotation][iid_is][out] */ 
+            _COM_Outptr_  void **ppvObject);
         
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             IDecklinkPushSource * This);
@@ -392,6 +396,7 @@ EXTERN_C const IID IID_IDecklinkPushSource2;
         
     };
     
+    
 #else 	/* C style interface */
 
     typedef struct IDecklinkPushSource2Vtbl
@@ -401,8 +406,8 @@ EXTERN_C const IID IID_IDecklinkPushSource2;
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             IDecklinkPushSource2 * This,
             /* [in] */ REFIID riid,
-            /* [iid_is][out] */ 
-            __RPC__deref_out  void **ppvObject);
+            /* [annotation][iid_is][out] */ 
+            _COM_Outptr_  void **ppvObject);
         
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             IDecklinkPushSource2 * This);
@@ -481,6 +486,7 @@ EXTERN_C const IID IID_IDecklinkPushSource3;
         
     };
     
+    
 #else 	/* C style interface */
 
     typedef struct IDecklinkPushSource3Vtbl
@@ -490,8 +496,8 @@ EXTERN_C const IID IID_IDecklinkPushSource3;
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             IDecklinkPushSource3 * This,
             /* [in] */ REFIID riid,
-            /* [iid_is][out] */ 
-            __RPC__deref_out  void **ppvObject);
+            /* [annotation][iid_is][out] */ 
+            _COM_Outptr_  void **ppvObject);
         
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             IDecklinkPushSource3 * This);
@@ -519,14 +525,22 @@ EXTERN_C const IID IID_IDecklinkPushSource3;
         
         /* [local] */ HRESULT ( STDMETHODCALLTYPE *Invoke )( 
             IDecklinkPushSource3 * This,
-            /* [in] */ DISPID dispIdMember,
-            /* [in] */ REFIID riid,
-            /* [in] */ LCID lcid,
-            /* [in] */ WORD wFlags,
-            /* [out][in] */ DISPPARAMS *pDispParams,
-            /* [out] */ VARIANT *pVarResult,
-            /* [out] */ EXCEPINFO *pExcepInfo,
-            /* [out] */ UINT *puArgErr);
+            /* [annotation][in] */ 
+            _In_  DISPID dispIdMember,
+            /* [annotation][in] */ 
+            _In_  REFIID riid,
+            /* [annotation][in] */ 
+            _In_  LCID lcid,
+            /* [annotation][in] */ 
+            _In_  WORD wFlags,
+            /* [annotation][out][in] */ 
+            _In_  DISPPARAMS *pDispParams,
+            /* [annotation][out] */ 
+            _Out_opt_  VARIANT *pVarResult,
+            /* [annotation][out] */ 
+            _Out_opt_  EXCEPINFO *pExcepInfo,
+            /* [annotation][out] */ 
+            _Out_opt_  UINT *puArgErr);
         
         /* [helpstring][id] */ HRESULT ( STDMETHODCALLTYPE *GetFrameBuffer )( 
             IDecklinkPushSource3 * This,

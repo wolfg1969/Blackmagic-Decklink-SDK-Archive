@@ -31,6 +31,7 @@
 
 #import <Cocoa/Cocoa.h>
 #import "DeckLinkAPI.h"
+#import "SignalGenerator3DVideoFrame.h"
 
 enum OutputSignal {
 	kOutputSignalPip		= 0,
@@ -41,12 +42,13 @@ class PlaybackDelegate;
 
 @interface SyncController : NSObject {
 	IBOutlet NSButton*			startButton;
-	
+
 	IBOutlet NSPopUpButton*		outputSignalPopup;
 	IBOutlet NSPopUpButton*		audioChannelPopup;
 	IBOutlet NSPopUpButton*		audioSampleDepthPopup;
 	IBOutlet NSPopUpButton*		videoFormatPopup;
-	
+	IBOutlet NSPopUpButton*		pixelFormatPopup;
+
 	IBOutlet NSView*			previewView;
 	
 	PlaybackDelegate*			playerDelegate;
@@ -60,8 +62,8 @@ class PlaybackDelegate;
 	BMDTimeValue				frameDuration;
 	BMDTimeScale				frameTimescale;
 	uint32_t					framesPerSecond;
-	IDeckLinkMutableVideoFrame*	videoFrameBlack;
-	IDeckLinkMutableVideoFrame*	videoFrameBars;
+	SignalGenerator3DVideoFrame*	videoFrameBlack;
+	SignalGenerator3DVideoFrame*	videoFrameBars;
 	uint32_t					totalFramesScheduled;
 	//
 	OutputSignal				outputSignal;
@@ -103,8 +105,8 @@ public:
 	virtual HRESULT		RenderAudioSamples (bool preroll);
 };
 
-
 void	FillSine (void* audioBuffer, uint32_t samplesToWrite, uint32_t channels, uint32_t sampleDepth);
-void	FillColourBars (IDeckLinkVideoFrame* theFrame);
+void	FillColourBars (IDeckLinkVideoFrame* theFrame, bool reversed);
 void	FillBlack (IDeckLinkVideoFrame* theFrame);
 void	ScheduleNextVideoFrame (void);
+int		GetBytesPerPixel (BMDPixelFormat pixelFormat);

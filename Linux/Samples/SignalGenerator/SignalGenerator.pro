@@ -3,6 +3,7 @@ LANGUAGE  	= C++
 CONFIG		+= qt opengl
 QT			+= opengl
 INCLUDEPATH =	../../include 
+LIBS		+= -ldl
 
 HEADERS 	=	SignalGenerator.h
 SOURCES 	= 	main.cpp \

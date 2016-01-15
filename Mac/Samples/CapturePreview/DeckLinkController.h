@@ -29,51 +29,67 @@
 #include "DeckLinkAPI.h"
 #include "CapturePreview.h"
 
+class DeckLinkDevice : public IDeckLinkInputCallback
+{
+public:
+    DeckLinkDevice(CapturePreviewAppDelegate* uiDelegate, IDeckLink* device);
+    virtual ~DeckLinkDevice();
+    
+    bool                        init();
+    
+    //
+    // IDeckLinkInputCallback interface
+	virtual HRESULT             VideoInputFormatChanged (/* in */ BMDVideoInputFormatChangedEvents notificationEvents, /* in */ IDeckLinkDisplayMode *newDisplayMode, /* in */ BMDDetectedVideoInputFormatFlags detectedSignalFlags);
+	virtual HRESULT             VideoInputFrameArrived (/* in */ IDeckLinkVideoInputFrame* videoFrame, /* in */ IDeckLinkAudioInputPacket* audioPacket);
+    
+    // IUnknown needs only a dummy implementation
+	virtual HRESULT             QueryInterface (REFIID iid, LPVOID *ppv);
+	virtual ULONG               AddRef();
+	virtual ULONG               Release();
+    
+    NSString*                   getDeviceName() { return (NSString*)deviceName; };
+	NSMutableArray*             getDisplayModeNames();
+	bool                        deviceSupportsFormatDetection() { return supportFormatDetection; };
+	bool                        isCapturing() { return currentlyCapturing; };
+	bool                        startCapture(int videoModeIndex, IDeckLinkScreenPreviewCallback* screenPreviewCallback);
+	void                        stopCapture();
+    
+    // public members
+    IDeckLink*                              deckLink;
+	IDeckLinkInput*                         deckLinkInput;
+    bool                                    supportFormatDetection;
+    bool                                	currentlyCapturing;
+    
+private:
+    
+    void                                    getAncillaryDataFromFrame(IDeckLinkVideoInputFrame* frame, BMDTimecodeFormat format, NSString** timecodeString, NSString** userBitsString);
+    
+    CapturePreviewAppDelegate*              uiDelegate;
+    std::vector<IDeckLinkDisplayMode*>      modeList;
+    CFStringRef                             deviceName;
+    int32_t                                 refCount;
+};
 
-class DeckLinkController : public IDeckLinkInputCallback
+class DeckLinkDeviceDiscovery :  public IDeckLinkDeviceNotificationCallback
 {
 private:
-	
-	CapturePreviewAppDelegate*		uiDelegate;
-	
-	std::vector<IDeckLink*>			deviceList;
-	IDeckLink*						selectedDevice;
-	IDeckLinkInput*					deckLinkInput;
-	IDeckLinkScreenPreviewCallback*	screenPreviewCallback;
-	std::vector<IDeckLinkDisplayMode*>	modeList;
-	
-	bool							supportFormatDetection;
-	bool							currentlyCapturing;
-		
-	void				getAncillaryDataFromFrame(IDeckLinkVideoInputFrame* frame, BMDTimecodeFormat format, NSString** timecodeString, NSString** userBitsString);
-
+    IDeckLinkDiscovery*             deckLinkDiscovery;
+    CapturePreviewAppDelegate*      uiDelegate;
+    int32_t                         refCount;
 public:
-	DeckLinkController(CapturePreviewAppDelegate* uiDelegate);
-	virtual ~DeckLinkController();
-	
-	bool				init(NSView *previewView);
-	
-	int					getDeviceCount();
-	NSMutableArray*		getDeviceNameList();
-	
-	bool				selectDevice(int index);
-	
-	NSMutableArray* 	getDisplayModeNames();
-	bool				isFormatDetectionEnabled();
-	bool				isCapturing();
-	
-	bool				startCapture(int videoModeIndex);
-	void				stopCapture();
-		
-	//
-	// IDeckLinkInputCallback interface
-	
-	// IUnknown needs only a dummy implementation
-	virtual HRESULT		QueryInterface (REFIID iid, LPVOID *ppv)	{return E_NOINTERFACE;}
-	virtual ULONG		AddRef ()									{return 1;}
-	virtual ULONG		Release ()									{return 1;}
-	
-	virtual HRESULT		VideoInputFormatChanged (/* in */ BMDVideoInputFormatChangedEvents notificationEvents, /* in */ IDeckLinkDisplayMode *newDisplayMode, /* in */ BMDDetectedVideoInputFormatFlags detectedSignalFlags);
-	virtual HRESULT		VideoInputFrameArrived (/* in */ IDeckLinkVideoInputFrame* videoFrame, /* in */ IDeckLinkAudioInputPacket* audioPacket);	
+	DeckLinkDeviceDiscovery(CapturePreviewAppDelegate* uiDelegate);
+	virtual ~DeckLinkDeviceDiscovery();
+    
+    bool                Enable();
+    void                Disable();
+			
+    // IDeckLinkDeviceArrivalNotificationCallback interface
+    virtual HRESULT     DeckLinkDeviceArrived (/* in */ IDeckLink* deckLinkDevice);
+	virtual HRESULT     DeckLinkDeviceRemoved (/* in */ IDeckLink* deckLinkDevice);
+    
+    // IUnknown needs only a dummy implementation
+	virtual HRESULT		QueryInterface (REFIID iid, LPVOID *ppv);
+	virtual ULONG		AddRef ();
+	virtual ULONG		Release ();
 };
 
