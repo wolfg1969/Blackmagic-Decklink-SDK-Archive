@@ -1,0 +1,25 @@
+{
+  "DVTSourceControlWorkspaceBlueprintPrimaryRemoteRepositoryKey" : "39220cad-6c19-0efc-4190-cdb913059350++505",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyRepositoryLocationsKey" : {
+    "39220cad-6c19-0efc-4190-cdb913059350++505" : {
+
+    }
+  },
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyStatesKey" : {
+    "39220cad-6c19-0efc-4190-cdb913059350++505" : 0
+  },
+  "DVTSourceControlWorkspaceBlueprintIdentifierKey" : "16982C09-7647-4B48-8D09-D89571088303",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyPathsKey" : {
+    "39220cad-6c19-0efc-4190-cdb913059350++505" : "decklink-sdk-delphi-read-only\/"
+  },
+  "DVTSourceControlWorkspaceBlueprintNameKey" : "StreamingPreview",
+  "DVTSourceControlWorkspaceBlueprintVersion" : 204,
+  "DVTSourceControlWorkspaceBlueprintRelativePathToProjectKey" : "Blackmagic DeckLink SDK 9.7\/Mac\/Samples\/Streaming\/StreamingPreview\/StreamingPreview.xcodeproj",
+  "DVTSourceControlWorkspaceBlueprintRemoteRepositoriesKey" : [
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "http:\/\/decklink-sdk-delphi.googlecode.com\/svn",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Subversion",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "39220cad-6c19-0efc-4190-cdb913059350++505"
+    }
+  ]
+}
